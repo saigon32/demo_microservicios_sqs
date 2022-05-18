@@ -1,0 +1,253 @@
+package com.dislicores.api.otp.domain;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+
+/**
+ * DTO que representa el objeto de auditoria, el cual agrupa los atributos
+ * minimos que deben ser registrados en DynamoDB para el seguimiento de todas
+ * las operaciones realizadas sobre la aplicacion de B2B
+ *
+ * @author ricardo.ayala@pragma.com.co
+ * @version 1.0
+ */
+public class AuditDto {
+
+	private String partitionDate;
+	private String uuid;
+	private String ipAddress;
+	private String user;
+	private String userRole;
+	private String timestamp;
+	private String channel;
+	private String functionality;
+	private String operation;
+	private Object request;
+	private int status;
+	private String responseCode;
+	private String responseMessage;
+	private Object additionalInfo;
+
+	public AuditDto() {
+		// Empty constructor
+	}
+
+	@JsonCreator
+	public AuditDto(String partitionDate, String uuid, String ipAddress, String user, String timestamp, String channel, String functionality, String operation, Object request, int status, String responseCode, String responseMessage, Object additionalInfo) {
+		this(partitionDate, uuid, ipAddress, user, null, timestamp, channel, functionality, operation, request, status, responseCode, responseMessage, additionalInfo);
+	}
+
+	@JsonCreator
+	public AuditDto(String partitionDate, String uuid, String ipAddress, String user, String userRole, String timestamp, String channel, String functionality, String operation, Object request, int status, String responseCode, String responseMessage, Object additionalInfo) {
+		this.partitionDate = partitionDate;
+		this.uuid = uuid;
+		this.ipAddress = ipAddress;
+		this.user = user;
+		this.userRole = userRole;
+		this.timestamp = timestamp;
+		this.channel = channel;
+		this.functionality = functionality;
+		this.operation = operation;
+		this.request = request;
+		this.status = status;
+		this.responseCode = responseCode;
+		this.responseMessage = responseMessage;
+		this.additionalInfo = additionalInfo;
+	}
+
+	/**
+	 * @return the partitionDate
+	 */
+	public String getPartitionDate() {
+		return partitionDate;
+	}
+
+	/**
+	 * @param partitionDate the partitionDate to set
+	 */
+	public void setPartitionDate(String partitionDate) {
+		this.partitionDate = partitionDate;
+	}
+
+	/**
+	 * @return the uuid
+	 */
+	public String getUuid() {
+		return uuid;
+	}
+
+	/**
+	 * @param uuid the uuid to set
+	 */
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
+
+	/**
+	 * @return the ipAddress
+	 */
+	public String getIpAddress() {
+		return ipAddress;
+	}
+
+	/**
+	 * @param ipAddress the ipAddress to set
+	 */
+	public void setIpAddress(String ipAddress) {
+		this.ipAddress = ipAddress;
+	}
+
+	/**
+	 * @return the user
+	 */
+	public String getUser() {
+		return user;
+	}
+
+	/**
+	 * @param user the user to set
+	 */
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	/**
+	 * @return the userRole
+	 */
+	public String getUserRole() {
+		return userRole;
+	}
+
+	/**
+	 * @param userRole the userRole to set
+	 */
+	public void setUserRole(String userRole) {
+		this.userRole = userRole;
+	}
+
+	/**
+	 * @return the timestamp
+	 */
+	public String getTimestamp() {
+		return timestamp;
+	}
+
+	/**
+	 * @param timestamp the timestamp to set
+	 */
+	public void setTimestamp(String timestamp) {
+		this.timestamp = timestamp;
+	}
+
+	/**
+	 * @return the channel
+	 */
+	public String getChannel() {
+		return channel;
+	}
+
+	/**
+	 * @param channel the channel to set
+	 */
+	public void setChannel(String channel) {
+		this.channel = channel;
+	}
+
+	/**
+	 * @return the functionality
+	 */
+	public String getFunctionality() {
+		return functionality;
+	}
+
+	/**
+	 * @param functionality the functionality to set
+	 */
+	public void setFunctionality(String functionality) {
+		this.functionality = functionality;
+	}
+
+	/**
+	 * @return the operation
+	 */
+	public String getOperation() {
+		return operation;
+	}
+
+	/**
+	 * @param operation the operation to set
+	 */
+	public void setOperation(String operation) {
+		this.operation = operation;
+	}
+
+	/**
+	 * @return the request
+	 */
+	public Object getRequest() {
+		return request;
+	}
+
+	/**
+	 * @param request the request to set
+	 */
+	public void setRequest(Object request) {
+		this.request = request;
+	}
+
+	/**
+	 * @return the status
+	 */
+	public int getStatus() {
+		return status;
+	}
+
+	/**
+	 * @param status the status to set
+	 */
+	public void setStatus(int status) {
+		this.status = status;
+	}
+
+	/**
+	 * @return the responseCode
+	 */
+	public String getResponseCode() {
+		return responseCode;
+	}
+
+	/**
+	 * @param responseCode the responseCode to set
+	 */
+	public void setResponseCode(String responseCode) {
+		this.responseCode = responseCode;
+	}
+
+	/**
+	 * @return the responseMessage
+	 */
+	public String getResponseMessage() {
+		return responseMessage;
+	}
+
+	/**
+	 * @param responseMessage the responseMessage to set
+	 */
+	public void setResponseMessage(String responseMessage) {
+		this.responseMessage = responseMessage;
+	}
+
+	/**
+	 * @return the additionalInfo
+	 */
+	public Object getAdditionalInfo() {
+		return additionalInfo;
+	}
+
+	/**
+	 * @param additionalInfo the additionalInfo to set
+	 */
+	public void setAdditionalInfo(Object additionalInfo) {
+		this.additionalInfo = additionalInfo;
+	}
+
+}

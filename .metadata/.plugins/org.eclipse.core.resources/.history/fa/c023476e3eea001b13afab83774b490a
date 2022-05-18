@@ -1,0 +1,51 @@
+package com.familia.api.otp.exception;
+
+/**
+ * Clase que permite definir una excepcion personalizada para el manejo de errores en la aplicacion
+ * 
+ * @author ricardo.ayala@pragma.com.co
+ *
+ */
+public class OtpException extends Exception {
+    
+    /** Serialize */
+    private static final long serialVersionUID = 4073662842976820415L;
+    /** Mensaje informativo para el usuario */
+    private final String userMessage;
+    /** Codigo que define el estado de la transaccion */
+    private final int status;
+    /** Codigo de error dentro de la aplicacion */
+    private final String errorCode;
+
+    /**
+     * Metodo constructor
+     */
+    public OtpException(String developerMessage, String userMessage, int status, String errorCode, Throwable e) {
+        super(developerMessage, e);
+        this.userMessage = userMessage;
+        this.status = status;
+        this.errorCode = errorCode;
+    }
+
+    /**
+     * Metodo constructor
+     */
+    public OtpException(String developerMessage, String userMessage, int status, String errorCode) {
+        super(developerMessage);
+        this.userMessage = userMessage;
+        this.status = status;
+        this.errorCode = errorCode;
+    }
+
+    public String getUserMessage() {
+        return userMessage;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public String getErrorCode() {
+        return errorCode;
+    }
+}

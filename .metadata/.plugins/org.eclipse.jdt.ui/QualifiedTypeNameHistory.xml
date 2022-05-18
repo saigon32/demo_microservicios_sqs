@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+    <fullyQualifiedTypeName name="java.lang.Long"/>
+    <fullyQualifiedTypeName name="java.util.Date"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.model.Rol"/>
+    <fullyQualifiedTypeName name="javax.persistence.OneToMany"/>
+    <fullyQualifiedTypeName name="javax.persistence.ManyToOne"/>
+    <fullyQualifiedTypeName name="javax.persistence.JoinColumn"/>
+    <fullyQualifiedTypeName name="java.lang.Integer"/>
+    <fullyQualifiedTypeName name="javax.persistence.CascadeType"/>
+    <fullyQualifiedTypeName name="javax.persistence.OneToOne"/>
+    <fullyQualifiedTypeName name="org.apache.http.HttpStatus"/>
+    <fullyQualifiedTypeName name="org.springframework.http.HttpStatus"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.domain.OtpDTO"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.model.Otp"/>
+    <fullyQualifiedTypeName name="org.slf4j.Logger"/>
+    <fullyQualifiedTypeName name="org.slf4j.LoggerFactory"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.domain.UserDTO"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.util.RegisterConstants"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.util.AuditOperation"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.util.OtpProperties"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.domain.AuditDto"/>
+    <fullyQualifiedTypeName name="lombok.Data"/>
+    <fullyQualifiedTypeName name="java.lang.String"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.messaging.ProducerSQS"/>
+    <fullyQualifiedTypeName name="io.swagger.v3.oas.annotations.responses.ApiResponse"/>
+    <fullyQualifiedTypeName name="io.swagger.v3.oas.annotations.Operation"/>
+    <fullyQualifiedTypeName name="io.swagger.v3.oas.annotations.info.Contact"/>
+    <fullyQualifiedTypeName name="org.springframework.web.bind.annotation.PostMapping"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.exception.OtpException"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.util.OtpConstants"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.domain.ResponseDto"/>
+    <fullyQualifiedTypeName name="com.dislicores.api.otp.model.Usuario"/>
+    <fullyQualifiedTypeName name="javax.persistence.GeneratedValue"/>
+    <fullyQualifiedTypeName name="javax.persistence.GenerationType"/>
+</qualifiedTypeNameHistroy>

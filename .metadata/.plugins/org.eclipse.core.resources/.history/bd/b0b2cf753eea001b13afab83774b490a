@@ -1,0 +1,162 @@
+package com.familia.api.otp.model;
+
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.Date;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
+
+/**
+ * Entidad que representa la tabla OTP existente en la base de datos
+ *
+ * @author ricardo.ayala@pragma.com.co
+ *
+ */
+@Entity
+@Table(name = "OTP")
+public class Otp implements Serializable {
+
+    /**
+     * Serializer
+     */
+    private static final long serialVersionUID = -7803390933112217371L;
+    /** Identificador principal */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "otp_id")
+    private Long otpId;
+    /** Usuario que solicita el codigo de verificacion */
+    @ManyToOne
+    @JoinColumn(name = "usuario_id", referencedColumnName = "usuario_id")
+    private Usuario usuario;
+    /** Clave generada para el usuario */
+    @Size(min = 4, max = 6)
+    @Column(name = "clave", nullable = false, unique = false, length = 6)
+    private String clave;
+    /** Fecha de creacion del codigo otp */
+    @Column(name = "fecha_creacion")
+    private Date fechaCreacion;
+    /** Fecha de vencimiento del codigo otp */
+    @Column(name = "fecha_vencimiento")
+    private Date fechaVencimiento;
+    /** Numero de intentos de verificacion del codigo actual */
+    @Column(name = "intentos")
+    private Integer intentos;
+    /** Indica si el codigo ya fue usado */
+    @Column(name = "usado")
+    private Boolean usado;
+
+    /**
+     * @return the otpId
+     */
+    public Long getOtpId() {
+        return otpId;
+    }
+
+    /**
+     * @param otpId the otpId to set
+     */
+    public void setOtpId(Long otpId) {
+        this.otpId = otpId;
+    }
+
+    /**
+     * @return the usuario
+     */
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    /**
+     * @param usuario the usuario to set
+     */
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
+    }
+
+    /**
+     * @return the clave
+     */
+    public String getClave() {
+        return clave;
+    }
+
+    /**
+     * @param clave the clave to set
+     */
+    public void setClave(String clave) {
+        this.clave = clave;
+    }
+
+    /**
+     * @return the fechaCreacion
+     */
+    public Date getFechaCreacion() {
+        return fechaCreacion;
+    }
+
+    /**
+     * @param fechaCreacion the fechaCreacion to set
+     */
+    public void setFechaCreacion(Date fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+
+    /**
+     * @return the fechaVencimiento
+     */
+    public Date getFechaVencimiento() {
+        return fechaVencimiento;
+    }
+
+    /**
+     * @param fechaVencimiento the fechaVencimiento to set
+     */
+    public void setFechaVencimiento(Date fechaVencimiento) {
+        this.fechaVencimiento = fechaVencimiento;
+    }
+
+    /**
+     * @param fechaVencimiento the fechaVencimiento to set
+     */
+    public void setFechaVencimiento(Timestamp fechaVencimiento) {
+        this.fechaVencimiento = fechaVencimiento;
+    }
+
+    /**
+     * @return the intentos
+     */
+    public Integer getIntentos() {
+        return intentos;
+    }
+
+    /**
+     * @param intentos the intentos to set
+     */
+    public void setIntentos(Integer intentos) {
+        this.intentos = intentos;
+    }
+
+    /**
+     * @return the usado
+     */
+    public Boolean getUsado() {
+        return usado;
+    }
+
+    /**
+     * @param usado the usado to set
+     */
+    public void setUsado(Boolean usado) {
+        this.usado = usado;
+    }
+
+}

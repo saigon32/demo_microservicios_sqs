@@ -1,0 +1,55 @@
+package com.dislicores.api.otp.config;
+
+import javax.validation.Validation;
+import javax.validation.Validator;
+
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
+
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+
+/**
+ * Clase de configuracion de componentes que se requieran para el flujo de
+ * registro
+ * 
+ * @author ricardo.ayala@pragma.com.co
+ * @version 1.0
+ */
+@Configuration
+public class OtpConfig {
+
+	/**
+	 * Bean para el consumo de Apis Rest
+	 * 
+	 * @return Instancia del bean
+	 */
+	@Bean
+	RestTemplate restTemplate(RestTemplateBuilder builder) {
+		return builder.build();
+	}
+
+	/**
+	 * Bean para el envio de mensajes a colas de SQS
+	 * 
+	 * @param amazonSqs Objeto de conexion con SQS
+	 * @return Bean de envio de mensajes
+	 */
+	@Bean
+	QueueMessagingTemplate sqsTemplate(AmazonSQSAsync amazonSqs) {
+		return new QueueMessagingTemplate(amazonSqs);
+	}
+
+	/**
+	 * Bean para la validacion de objetos con Hibernate Validation
+	 * 
+	 * @return Instancia del bean de validacion
+	 */
+	@Bean
+	Validator validator() {
+		return Validation.buildDefaultValidatorFactory().getValidator();
+	}
+
+}

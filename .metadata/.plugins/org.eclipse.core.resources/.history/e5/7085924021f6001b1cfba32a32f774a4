@@ -1,0 +1,69 @@
+package com.dislicores.api.otp.domain;
+
+import java.io.Serializable;
+
+/**
+ * DTO que permite mapear la informacion de respuesta a la verificacion de un
+ * codigo OTP
+ * 
+ * @author andres.jurado@pragma.com.co
+ *
+ */
+public class OtpDTO implements Serializable {
+
+	/** Serializer */
+	private static final long serialVersionUID = -1427648822095587876L;
+	/** Numero de intentos de verificacion realizados por el usuario */
+	private Integer attempts;
+	/** Indica si la verificacion es exitosa */
+	private boolean valid;
+
+	/**
+	 * Metodo constructor
+	 */
+	public OtpDTO() {
+	}
+
+	/**
+	 * Metodo constructor
+	 * 
+	 * @param valid
+	 */
+	public OtpDTO(boolean valid) {
+		this.valid = valid;
+	}
+
+	/**
+	 * @return the attempts
+	 */
+	public Integer getAttempts() {
+		return attempts;
+	}
+
+	/**
+	 * @param attempts the attempts to set
+	 */
+	public void setAttempts(Integer attempts) {
+		this.attempts = attempts;
+	}
+
+	/**
+	 * @return the valid
+	 */
+	public boolean isValid() {
+		return valid;
+	}
+
+	/**
+	 * @param valid the valid to set
+	 */
+	public void setValid(boolean valid) {
+		this.valid = valid;
+	}
+
+	@Override
+	public String toString() {
+		return "OtpResponseDTO [attempts=" + attempts + ", valid=" + valid + "]";
+	}
+
+}

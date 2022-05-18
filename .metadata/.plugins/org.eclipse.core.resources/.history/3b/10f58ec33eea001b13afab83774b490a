@@ -1,0 +1,76 @@
+package com.familia.api.otp;
+
+import static springfox.documentation.builders.PathSelectors.regex;
+
+import java.util.Collections;
+
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.client.RestTemplate;
+
+import com.familia.plugin.amqp.SendAmqpMessage;
+
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.service.ApiInfo;
+import springfox.documentation.service.Contact;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+@SpringBootApplication
+@EnableSwagger2
+public class FamiliaPomysOtpApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(FamiliaPomysOtpApplication.class, args);
+    }
+
+    /**
+     * Define un Bean para realizar la auditoria de las transacciones sobre la
+     * aplicacion
+     * 
+     * @return Objeto de auditoria
+     */
+    @Bean
+    SendAmqpMessage sendAuditMessage(RabbitTemplate template) {
+        return SendAmqpMessage.getInstance(template);
+    }
+
+    /**
+     * Define un bean para el elemento de Spring utilizado en el consumo de Apis
+     * Rest
+     *
+     * @return Instancia del bean
+     */
+    @Bean
+    RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    /**
+     * Metodo que define un Bean de configuración para la documentacion de Apis con
+     * Swagger
+     * 
+     * @return Objecto configurado para la documentación con Swagger
+     */
+    @Bean
+    public Docket api() {
+        return new Docket(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.basePackage("com.familia.api.otp.rest"))
+                .paths(regex("/api/v1.*")).build().useDefaultResponseMessages(false).apiInfo(apiInfo());
+    }
+
+    /**
+     * Metodo que permite definir la información general que aplica a todas las Apis
+     * expuestas en este proyecto
+     * 
+     * @return Objeto con la informacion de las Apis
+     */
+    private ApiInfo apiInfo() {
+        return new ApiInfo("Pomys orp REST", "Documentación de las Apis la generación y validación de otp usuario en el portal de Pomys",
+                "1.0", "Visita https://petys.com", new Contact("Pragma S.A", "www.pragma.com.co", "mauricio.valencia@pragma.com.co"),
+                "License", "www.pragma.com.co/license", Collections.emptyList());
+    }
+
+}

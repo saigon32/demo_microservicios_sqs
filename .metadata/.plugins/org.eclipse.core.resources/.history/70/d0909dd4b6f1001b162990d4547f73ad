@@ -1,0 +1,55 @@
+package codility.examples;
+
+import java.util.Arrays;
+
+public class QuitCoupleLetter {
+
+	public String sortString(String s) {
+		char[] sortWord = s.toCharArray();
+		Arrays.sort(sortWord);
+		s = new String(sortWord);
+		return s;
+	}
+
+	public String quitCoupleB(String s) {
+		StringBuilder sb = new StringBuilder();
+		char f = s.charAt(0);
+		String r = s.substring(1, s.length());
+		if (r.indexOf(f) >= 0) {
+			char[] charArray = r.toCharArray();
+			charArray[r.indexOf(f)] = ' ';
+			quitCouple(String.valueOf(charArray).trim());
+		} else {
+			System.err.println("no se repite: " + f);
+			sb.append(String.valueOf(f));
+		}
+		return sb.toString();
+	}
+
+	public String quitCouple(String s) {
+		System.err.println("original   s : " + s);
+		char f = 0;
+		for (int i = 0; i < s.length(); i++) {
+			f = s.charAt(i);
+			String r = s.substring(i + 1, s.length());
+			if (r.indexOf(f) >= 0) {
+				char[] charArray = r.toCharArray();
+				charArray[r.indexOf(f)] = ' ';
+				s = String.valueOf(charArray);
+				System.err.println("Elimados los duplicados: " + f + ", s: " + s);
+				if (s.length() > 1) {
+					quitCouple(s.trim());
+					break;
+				}
+			}
+		}
+		return f + s;
+	}
+
+	public static void main(String[] args) {
+		String s = "ACCAABBC";
+		// String s = "ABBC";
+		QuitCoupleLetter coupleLetter = new QuitCoupleLetter();
+		System.err.println("queda : " + coupleLetter.quitCouple(s));
+	}
+}

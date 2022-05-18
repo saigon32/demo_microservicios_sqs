@@ -1,0 +1,13 @@
+package com.dislicores.api.otp.rest;
+
+public class Greeting {
+	private final Long id;
+	private final String content;
+
+	public Greeting(Long id, String content) {
+		super();
+		this.id = id;
+		this.content = content;
+	}
+
+}

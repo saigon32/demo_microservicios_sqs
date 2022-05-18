@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/demo-micro-java-docker" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dislicores-b2b-authentication-api" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dislicores-b2b-notification-api" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dislicores-b2b-otp-api" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dislicores-b2b-register-api" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dislicores-databases-scripts" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dislicores-siesa-integration-api" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/microservice-springboot-docker" vcs="Git" />
+  </component>
+</project>

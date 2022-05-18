@@ -1,0 +1,124 @@
+pipeline {
+
+    agent { label 'DevOps2-Slave'}
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '5'))
+    }
+
+    environment {
+        PROJECT = "pomys-otp-api"
+        IMAGE_NAME = "familia/pomys-otp-api"
+        VERSION = "0.0.1"
+        FILE_PATTERN = "**/build/libs/*.jar"
+        GRADLE_BUILD = "gradle:jdk12"
+        SONAR_URL = "${SONAR_URL}"
+        SONAR_TOKEN = "${SONAR_TOKEN}"
+        EMAIL_DEVELOPERS = "${EMAIL_DEVELOPERS}"
+
+        AWS_REGION = "${AWS_REGION}"
+    }
+
+    stages {
+        stage('INITIALIZE') {
+            steps {
+                script {
+                    if (env.BRANCH_NAME == "master") {
+                        env.REGISTRY_URL = "${AWS_REGISTRY_URL_PDN}"
+                        env.AWS_CREDENTIALS = "${AWS_CREDENTIALS_PDN}"
+                        env.IMAGE_TAG = "${IMAGE_NAME}:latest"
+                    } else if (env.BRANCH_NAME == "develop") {
+                        env.REGISTRY_URL = "${AWS_REGISTRY_URL_DEV}"
+                        env.AWS_CREDENTIALS = "${AWS_CREDENTIALS_DEV}"
+                        env.IMAGE_TAG = "${IMAGE_NAME}:${VERSION}-SNAPSHOT"
+                    } else if (env.BRANCH_NAME == "staging") {
+                        env.REGISTRY_URL = "${AWS_REGISTRY_URL_DEV}"
+                        env.AWS_CREDENTIALS = "${AWS_CREDENTIALS_DEV}"
+                        env.IMAGE_TAG = "${IMAGE_NAME}:${VERSION}-RELEASE"
+                    }
+                }
+            }
+        }
+        stage('GET_CODE') {
+            steps {
+                echo "[EXEC] - Obtener codigo fuente desde repositorio Git"
+                checkout scm
+            }
+        }
+        stage('BUILD_CODE') {
+            steps {
+                echo "[EXEC] - Compilacion de codigo fuente."
+                script {
+                    docker.image("${GRADLE_BUILD}").inside('--net=host') {
+                        sh "gradle clean build -x test"
+                        archiveArtifacts "${FILE_PATTERN}"
+                    }
+                }
+            }
+        }
+        stage('UNIT_TEST') {
+            steps {
+                echo "[EXEC] - Ejecucion de pruebas unitarias."
+                script {
+                    docker.image("${GRADLE_BUILD}").inside('--net=host') {
+                        sh "gradle test"
+                        junit "build/test-results/test/TEST-*.xml"
+                    }
+                }
+            }
+        }
+        stage('CODE_ANA') {
+            steps {
+                echo "[EXEC] - Analisis estatico de codigo"
+                script {
+                    docker.image("${GRADLE_BUILD}").inside('--net=host') {
+                        sh "gradle sonarqube -Dsonar.host.url=${SONAR_URL} -Dsonar.login=${SONAR_TOKEN}"
+                        archiveArtifacts "**/build/sonar/*.txt"
+                    }
+                }
+            }
+        }
+        stage('BUILD/PUBLISH IMAGE') {
+            steps {
+                echo "[EXEC] - Build and publish application"
+                script {
+                    def buildResult
+                    docker.withRegistry("https://${REGISTRY_URL}", "ecr:${AWS_REGION}:${AWS_CREDENTIALS}") {
+                        echo "Connect to registry at ${REGISTRY_URL}"
+                        echo "Build ${IMAGE_TAG}"
+                        buildResult = docker.build("${IMAGE_TAG}")
+                        echo "Register ${IMAGE_NAME} at ${REGISTRY_URL}"
+                        buildResult.push()
+                        echo "Disconnect from registry at ${REGISTRY_URL}"
+                        sh "docker logout ${REGISTRY_URL}"
+                    }
+                }
+            }
+        }
+        stage('DEPLOY') {
+            steps {
+                echo "[EXEC] - Deploy application"
+                script {
+                    env.BUILD_STAGE = "DEPLOY"
+                    env.IMAGE_TAG = "${REGISTRY_URL}${IMAGE_TAG}"
+                    def text = readFile(file: "k8s/deployment.yaml")
+                    text = text.replaceAll("BRANCH_NAME", "${BRANCH_NAME}")
+                    text = text.replaceAll("IMAGE_TAG", "${IMAGE_TAG}")
+                    writeFile(file: "k8s/deployment.yaml", text: text)
+                    sh "~/kubectl config use-context ${BRANCH_NAME}"
+                    sh "~/kubectl apply -f k8s/deployment.yaml"
+                    sh "~/kubectl --namespace ${BRANCH_NAME} rollout restart deployment.v1.apps/${PROJECT}"
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            deleteDir()
+        }
+        failure {
+            office365ConnectorSend color: '#96CEB4', message: "Despligue de: ${PROJECT} en ${BRANCH_NAME}", status: "Error executing stage ${BUILD_STAGE}", webhookUrl: "${TEAMS_WEBHOOK}"
+        }
+    }
+}

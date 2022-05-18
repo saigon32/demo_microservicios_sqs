@@ -1,0 +1,68 @@
+package com.dislicores.api.otp.domain;
+
+import java.util.List;
+import java.util.Optional;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+
+public class SmsRequestDto {
+
+    @NotBlank(message = "DNA002")
+    @Pattern(regexp = "^\\+[1-9]{1,4}[0-9]{3,14}$", message = "DNA004")
+    private String cellphone;
+    @NotBlank(message = "DNA002")
+    private String messageTemplate;
+    private List<String> params;
+
+    /**
+     * @return the cellphone
+     */
+    public String getCellphone() {
+        return cellphone;
+    }
+
+    /**
+     * @param cellphone
+     *            the cellphone to set
+     */
+    public void setCellphone(String cellphone) {
+        this.cellphone = cellphone;
+    }
+
+    /**
+     * @return the messageTemplate
+     */
+    public String getMessageTemplate() {
+        return messageTemplate;
+    }
+
+    /**
+     * @param messageTemplate
+     *            the messageTemplate to set
+     */
+    public void setMessageTemplate(String messageTemplate) {
+        this.messageTemplate = messageTemplate;
+    }
+
+    /**
+     * @return the params
+     */
+    public Optional<List<String>> getParams() {
+        return Optional.ofNullable(params);
+    }
+
+    /**
+     * @param params
+     *            the params to set
+     */
+    public void setParams(List<String> params) {
+        this.params = params;
+    }
+
+    @Override
+    public String toString() {
+        return "SmsRequestDto [cellphone=" + cellphone + ", messageTemplate=" + messageTemplate + ", params=" + params + "]";
+    }
+
+}

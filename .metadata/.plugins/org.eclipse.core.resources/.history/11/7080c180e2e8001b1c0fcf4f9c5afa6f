@@ -1,0 +1,11 @@
+package com.dislicores.api.integration.domain;
+
+import lombok.Data;
+
+@Data
+public class FieldErrorDto {
+
+    private final String field;
+    private final String message;
+
+}

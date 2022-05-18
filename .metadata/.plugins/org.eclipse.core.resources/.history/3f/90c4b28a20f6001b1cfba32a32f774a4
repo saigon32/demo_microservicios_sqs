@@ -1,0 +1,5 @@
+package com.dislicores.api.otp.rest;
+
+public class Greeting {
+
+}

@@ -1,0 +1,14 @@
+package codility.examples;
+
+public class SplitString {
+
+	public static void main(String[] args) {
+		String s = "aaabbbcccdddeeeff";
+		for (int i = 0; i < s.length(); i++) {
+			String result = s.substring(i, 2);
+			System.err.println(result);
+			i = result.length();
+		}
+	}
+
+}

@@ -1,0 +1,22 @@
+package com.familia.api.otp.config;
+
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+/**
+ * Clase que define un Bean de configuracion de Spring, el cual permite definir la conexion al sistema de base de datos
+ * 
+ * @author ricardo.ayala@pragma.com.co
+ *
+ */
+@Configuration
+@EnableJpaRepositories(basePackages = { "com.familia" })
+@EnableTransactionManagement
+@ComponentScan(basePackages = "com.familia")
+@EntityScan(basePackages = "com.familia")
+public class DataSourceConfiguration {
+    
+}

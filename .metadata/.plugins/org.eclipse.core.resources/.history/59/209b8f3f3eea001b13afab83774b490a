@@ -1,0 +1,64 @@
+package com.familia.api.otp.domain;
+
+import java.io.Serializable;
+
+public class AccountConfirmationDTO implements Serializable {
+
+	/** Serializable */
+	private static final long serialVersionUID = 8070626284010540758L;
+	/** email del destinatario */
+	private String email;
+	/** nombre del usaurio */
+	private String name;
+	/** mensaje */
+	private String key;
+
+	public AccountConfirmationDTO(String email, String name, String key) {
+		this.email = email;
+		this.name = name;
+		this.key = key;
+	}
+
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @param name the name to set
+	 */
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	/**
+	 * @return the email
+	 */
+	public String getEmail() {
+		return email;
+	}
+
+	/**
+	 * @param email the email to set
+	 */
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	/**
+	 * @return the key
+	 */
+	public String getKey() {
+		return key;
+	}
+
+	/**
+	 * @param key the key to set
+	 */
+	public void setKey(String key) {
+		this.key = key;
+	}
+
+}

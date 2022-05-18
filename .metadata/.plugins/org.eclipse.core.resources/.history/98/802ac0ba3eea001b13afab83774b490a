@@ -1,0 +1,202 @@
+package com.familia.api.otp.util;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+/**
+ * Componente de Spring que permite la carga de propiedades personalizadas
+ * definidas en el archivo de configuracion del proyecto
+ *
+ * @author ricardo.ayala@pragma.com.co
+ *
+ */
+@Component
+@ConfigurationProperties(prefix = "otp")
+public class OtpProperties {
+
+	private Notification notification;
+
+	/**
+	 * @return the notification
+	 */
+	public Notification getNotification() {
+		return notification;
+	}
+
+	/**
+	 * @param notification the notification to set
+	 */
+	public void setNotification(Notification notification) {
+		this.notification = notification;
+	}
+
+	public static class Notification {
+
+		/** Endpoint de consumo de las Apis rest de notificacion */
+		private String endpointUrl;
+		/**
+		 * Path de consumo de la api de notificacion de creacion de contenido mediante
+		 * un archivo
+		 */
+		private String otpPath;
+		/** Path pde consumo de la Api de envio de SMS */
+		private String smsPath;
+		/** Path pde consumo de la Api de envio de codigo de activacion */
+		private String activationPath;
+		/** Path pde consumo de la Api de envio de EMAIL mediante MarketingCloud */
+		private String mcEmail;
+		/** Path pde consumo de la Api de envio de SMS mediante MarketingCloud */
+		private String mcSms;
+		/** DefinitionKey identificador del mensaje SMS en Marketing Cloud */
+		private String smsComfirmationDefinitionKey;
+		/** DefinitionKey identificador del mensaje EMAIL en Marketing Cloud */
+		private String emailComfirmationDefinitionKey;
+		/** DefinitionKey identificador del mensaje OTP SMS en Marketing Cloud */
+		private String smsOtpDefinitionKey;
+		/** DefinitionKey identificador del mensaje OTP EMAIL en Marketing Cloud */
+		private String emailOtpDefinitionKey;
+
+		/**
+		 * @return the smsOtpDefinitionKey
+		 */
+		public String getSmsOtpDefinitionKey() {
+			return smsOtpDefinitionKey;
+		}
+
+		/**
+		 * @param smsOtpDefinitionKey the smsOtpDefinitionKey to set
+		 */
+		public void setSmsOtpDefinitionKey(String smsOtpDefinitionKey) {
+			this.smsOtpDefinitionKey = smsOtpDefinitionKey;
+		}
+
+		/**
+		 * @return the emailOtpDefinitionKey
+		 */
+		public String getEmailOtpDefinitionKey() {
+			return emailOtpDefinitionKey;
+		}
+
+		/**
+		 * @param emailOtpDefinitionKey the emailOtpDefinitionKey to set
+		 */
+		public void setEmailOtpDefinitionKey(String emailOtpDefinitionKey) {
+			this.emailOtpDefinitionKey = emailOtpDefinitionKey;
+		}
+
+		/**
+		 * @return the mcEmail
+		 */
+		public String getMcEmail() {
+			return mcEmail;
+		}
+
+		/**
+		 * @param mcEmail the mcEmail to set
+		 */
+		public void setMcEmail(String mcEmail) {
+			this.mcEmail = mcEmail;
+		}
+
+		/**
+		 * @return the mcSms
+		 */
+		public String getMcSms() {
+			return mcSms;
+		}
+
+		/**
+		 * @param mcSms the mcSms to set
+		 */
+		public void setMcSms(String mcSms) {
+			this.mcSms = mcSms;
+		}
+
+		/**
+		 * @return the smsComfirmationDefinitionKey
+		 */
+		public String getSmsComfirmationDefinitionKey() {
+			return smsComfirmationDefinitionKey;
+		}
+
+		/**
+		 * @param smsComfirmationDefinitionKey the smsComfirmationDefinitionKey to set
+		 */
+		public void setSmsComfirmationDefinitionKey(String smsComfirmationDefinitionKey) {
+			this.smsComfirmationDefinitionKey = smsComfirmationDefinitionKey;
+		}
+
+		/**
+		 * @return the emailComfirmationDefinitionKey
+		 */
+		public String getEmailComfirmationDefinitionKey() {
+			return emailComfirmationDefinitionKey;
+		}
+
+		/**
+		 * @param emailComfirmationDefinitionKey the emailComfirmationDefinitionKey to
+		 *                                       set
+		 */
+		public void setEmailComfirmationDefinitionKey(String emailComfirmationDefinitionKey) {
+			this.emailComfirmationDefinitionKey = emailComfirmationDefinitionKey;
+		}
+
+		/**
+		 * @return the activationPath
+		 */
+		public String getActivationPath() {
+			return activationPath;
+		}
+
+		/**
+		 * @param activationPath the activationPath to set
+		 */
+		public void setActivationPath(String activationPath) {
+			this.activationPath = activationPath;
+		}
+
+		/**
+		 * @return the endpointUrl
+		 */
+		public String getEndpointUrl() {
+			return endpointUrl;
+		}
+
+		/**
+		 * @param endpointUrl the endpointUrl to set
+		 */
+		public void setEndpointUrl(String endpointUrl) {
+			this.endpointUrl = endpointUrl;
+		}
+
+		/**
+		 * @return the otpPath
+		 */
+		public String getOtpPath() {
+			return otpPath;
+		}
+
+		/**
+		 * @param otpPath the otpPath to set
+		 */
+		public void setOtpPath(String otpPath) {
+			this.otpPath = otpPath;
+		}
+
+		/**
+		 * @return the smsPath
+		 */
+		public String getSmsPath() {
+			return smsPath;
+		}
+
+		/**
+		 * @param smsPath the smsPath to set
+		 */
+		public void setSmsPath(String smsPath) {
+			this.smsPath = smsPath;
+		}
+
+	}
+
+}

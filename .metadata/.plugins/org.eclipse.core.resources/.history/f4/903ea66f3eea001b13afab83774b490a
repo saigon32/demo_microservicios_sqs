@@ -1,0 +1,41 @@
+package com.familia.api.otp.domain;
+
+import java.io.Serializable;
+
+/**
+ * DTO que mapea la informacion de la solicitud de envio de un codigo OTP
+ * 
+ * @author ricardo.ayala@pragma.com.co
+ *
+ */
+public class OtpRequestDTO implements Serializable {
+
+	/** Serializer */
+	private static final long serialVersionUID = -290950039136479397L;
+
+	/**
+	 * Valor de la peticion enviada al servicio de OTP, puede contener el medio de
+	 * envio del otp, o el codigo ingresado por el usuario para su verificacion
+	 */
+	private String value;
+
+	/**
+	 * @return the value
+	 */
+	public String getValue() {
+		return value;
+	}
+
+	/**
+	 * @param value the value to set
+	 */
+	public void setValue(String value) {
+		this.value = value;
+	}
+
+	@Override
+	public String toString() {
+		return "OtpRequestDTO [value=" + value + "]";
+	}
+
+}

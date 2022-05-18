@@ -1,0 +1,105 @@
+package com.dislicores.api.otp.util;
+
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+
+import com.dislicores.api.otp.domain.FieldErrorDto;
+import com.dislicores.api.otp.domain.ResponseDto;
+import com.dislicores.api.otp.exception.OtpException;
+
+/**
+ * Componente utilitario para la validacion con Hibernate validation. Permite
+ * ejecutar validacion y convertir el resultado al objeto de respuesta generico
+ * 
+ * @author ricardo.ayala@pragma.com.co
+ * @version 1.0
+ */
+@Component
+public class ValidationUtils {
+
+	private final MessagesUtil messagesUtil;
+	private final Validator validator;
+
+	@Autowired
+	ValidationUtils(MessagesUtil messagesUtil, Validator validator) {
+		this.messagesUtil = messagesUtil;
+		this.validator = validator;
+	}
+
+	/**
+	 * Ejecuta la validacion de Beans con Hibernate Validation y lanza una excepcion
+	 * con las violaciones encontradas
+	 * 
+	 * @param o Objeto a validar
+	 * @throws RegisterException En caso de incumplir alguna de las validaciones
+	 */
+	public void validate(Object o) throws OtpException {
+		var violations = this.validator.validate(o);
+		this.throwExceptionIfExistsViolations(violations);
+	}
+
+	/**
+	 * Ejecuta la validacion de Beans con Hibernate Validation y lanza una excepcion
+	 * con las violaciones encontradas. Ejecuta solo las validaciones
+	 * correspondientes a los grupos indicados en la invocacion
+	 * 
+	 * @param o      Objeto a validar
+	 * @param groups Grupo de restricciones que deben ser validadas
+	 * @throws RegisterException En caso de incumplir alguna de las validaciones
+	 */
+	public void validate(Object o, Class<?>... groups) throws OtpException {
+		var violations = this.validator.validate(o, groups);
+		this.throwExceptionIfExistsViolations(violations);
+	}
+
+	/**
+	 * Metodo que valida si existe alguna violacion, y de ser el caso lanza la
+	 * excepcion correspondiente
+	 * 
+	 * @param violations Lista con el resultado de la validacion
+	 */
+	private void throwExceptionIfExistsViolations(Set<ConstraintViolation<Object>> violations) {
+		if (!violations.isEmpty()) {
+			throw new OtpException(HttpStatus.BAD_REQUEST.value(), OtpConstants.DOA001, this.messagesUtil.getMessage(OtpConstants.DOA001), violations.stream().map(this::toFieldError).collect(Collectors.toList()));
+		}
+	}
+
+	/**
+	 * Metodo que permite construir el objeto de respuesta generico a partir de una
+	 * lista de violaciones
+	 * 
+	 * @param violations Lista de violaciones
+	 * @return Objeto de respuesta generico, con la informacion de las violaciones
+	 *         encontradas durante el proceso de validacion
+	 */
+	public ResponseDto<Void> createResponseFromConstraintViolations(Set<ConstraintViolation<?>> violations) {
+		return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), OtpConstants.DOA001, this.messagesUtil.getMessage(OtpConstants.DOA001), violations.stream().map(this::toFieldError).collect(Collectors.toList()));
+	}
+
+	/**
+	 * Transforma una violacion hacia el Dto que permite visualizar el campo en el
+	 * cual se incumple la validacion y el mensaje correspondiente
+	 * 
+	 * @param violation Objeto con la informacion de la violacion
+	 * @return DTO para los errores en campos
+	 */
+	public FieldErrorDto toFieldError(ConstraintViolation<?> violation) {
+		String code = violation.getMessage();
+		String message;
+		if (code.equals(OtpConstants.DOA003)) {
+			message = this.messagesUtil.getFormatedMessage(code, violation.getConstraintDescriptor().getAttributes().get("value"));
+		} else {
+			message = this.messagesUtil.getMessage(code);
+		}
+		var propertyPath = violation.getPropertyPath().toString();
+		return new FieldErrorDto(propertyPath.substring(propertyPath.lastIndexOf('.') + 1), message);
+	}
+
+}

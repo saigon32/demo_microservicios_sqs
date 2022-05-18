@@ -1,0 +1,357 @@
+package com.dislicores.api.otp.business;
+
+import static com.dislicores.api.otp.util.LoggerConstants.LOG_SEND_ACTIVATION_CODE_ERROR;
+import static com.dislicores.api.otp.util.LoggerConstants.LOG_USER_EMAIL;
+import static com.dislicores.api.otp.util.LoggerConstants.LOG_VALIDATE_ACTIVATION_CODE_ERROR;
+import static com.dislicores.api.otp.util.OtpConstants.MC_DATE_PARAM;
+import static com.dislicores.api.otp.util.OtpConstants.MC_KEY_PARAM;
+import static com.dislicores.api.otp.util.OtpConstants.MC_NAME_PARAM;
+import static com.dislicores.api.otp.util.OtpConstants.MC_TIME_PARAM;
+
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.SplittableRandom;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import com.dislicores.api.otp.domain.ActivationAccountDTO;
+import com.dislicores.api.otp.domain.NotificationDTO;
+import com.dislicores.api.otp.domain.OtpDTO;
+import com.dislicores.api.otp.domain.OtpRequestDTO;
+import com.dislicores.api.otp.domain.ResponseDto;
+import com.dislicores.api.otp.exception.OtpException;
+import com.dislicores.api.otp.model.Otp;
+import com.dislicores.api.otp.model.Usuario;
+import com.dislicores.api.otp.repository.OtpRepository;
+import com.dislicores.api.otp.repository.UsuarioRepository;
+import com.dislicores.api.otp.util.MedioVerificacion;
+import com.dislicores.api.otp.util.MessagesUtil;
+import com.dislicores.api.otp.util.OtpConstants;
+import com.dislicores.api.otp.util.OtpProperties;
+//import com.dislicores.plugin.amqp.SendAmqpMessage;
+//import com.dislicores.plugin.utilities.domain.Audit;
+//import com.dislicores.plugin.utilities.util.AuditOperation;
+//import com.dislicores.plugin.utilities.util.ConfigurationResource;
+//import com.dislicores.plugin.utilities.util.MessageResource;
+//import com.google.gson.Gson;
+//import com.google.gson.JsonObject;
+
+@Service
+public class OtpBusinessImpl implements OtpBusiness {
+
+	/** Logger */
+	private static final Logger LOGGER = LoggerFactory.getLogger(OtpBusinessImpl.class);
+	/** Objeto de acceso a la capa de datos para la entidad Propiedades */
+//	private final ConfigurationResource configuration;
+	@Autowired
+	private OtpRepository otpRepository;
+	@Autowired
+	private UsuarioRepository usuarioRepository;
+//	@Autowired
+//	private NotificationProvider notification;
+	/** Objeto para la carga de mensajes del sistema */
+	private final MessagesUtil message;
+	/** JSON/Object serializer */
+//	private final Gson gson;
+	/** Objeto de auditoria */
+//	private final SendAmqpMessage amqp;
+	private final OtpProperties otpProperties;
+
+	/**
+	 * Metodo constructor
+	 */
+	@Autowired
+	public OtpBusinessImpl(/* ConfigurationResource configuration, */MessagesUtil message/* , SendAmqpMessage amqp */,
+			OtpProperties otpProperties) {
+		this.otpProperties = otpProperties;
+//		this.configuration = configuration;
+		this.message = message;
+//		this.amqp = amqp;
+//		this.gson = new Gson();
+	}
+
+	@Override
+	public ResponseDto<Void> sendOtpCode(/* String jwt, */ OtpRequestDTO request, String ip) {
+		LOGGER.debug("Init sendOtpCode with request: {}", request);
+		ResponseDto<Void> response = null;
+		Usuario user = null;
+		MedioVerificacion mode;
+		try {
+//			user = getUserByJwt(jwt);
+			if (Objects.nonNull(user)) {
+				Otp otp = getOrCreateOtp(user);
+				NotificationDTO notification = new NotificationDTO();
+				notification.setEmail(user.getEmail());
+				notification.setPhone(user.getCelular().replace("+", ""));
+				Map<String, String> attributes = new HashMap<>();
+				attributes.put(MC_KEY_PARAM, otp.getClave());
+				if (MedioVerificacion.EMAIL.toString().equals(request.getValue())) {
+//					notification.setDefinitionKey(this.otpProperties.getNotification().getEmailOtpDefinitionKey());
+					attributes.put(MC_NAME_PARAM, user.getNombre());
+					SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+					SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+					Date date = new Date();
+					Calendar calendar = Calendar.getInstance();
+					calendar.setTime(date);
+					calendar.add(Calendar.DATE, 1);
+					date = calendar.getTime();
+					attributes.put(MC_DATE_PARAM, dateFormat.format(date));
+					attributes.put(MC_TIME_PARAM, timeFormat.format(date));
+					mode = MedioVerificacion.EMAIL;
+				} else {
+//					notification.setMessage(this.message.getMessage(UIM005));
+					mode = MedioVerificacion.SMS;
+//					notification.setDefinitionKey(this.otpProperties.getNotification().getSmsOtpDefinitionKey());
+				}
+				notification.setAttributes(attributes);
+//				this.notification.sendNotification(notification, mode, ip);
+				response = new ResponseDto<>(HttpStatus.OK.value(), message.getMessage(OtpConstants.UIM011),
+						message.getMessage("200"));
+			} else {
+//				response = new Response<>(HttpStatus.BAD_REQUEST.value(), message.getMessage(UEM017),
+//						message.getMessage(DEM029), EMPTY_STRING, EMPTY_STRING);
+			}
+
+		} catch (Exception e) {
+			LOGGER.error(LOG_SEND_ACTIVATION_CODE_ERROR, e);
+//			response = new ResponseDto<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), message.getMessage(UEM000),
+//					message.getMessage(DEM000), DEM000, EMPTY_STRING, null);
+		} finally {
+//			UUID uuid = UUID.randomUUID();
+//			Audit audit = new Audit(uuid.toString(), ip, null == user ? null : user.getEmail(), null, null, null,
+//					new Date(), PORTAL, OTP_API, AuditOperation.SEND_OTP.getValue(), request.toString(), response,
+//					EMPTY_STRING);
+//			String amqpMessage = this.gson.toJson(audit);
+//			amqp.sendMessage(AMPQ_QUEUE_EXCHANGE, AMPQ_ROUTINGKEY_AUDIT, amqpMessage);
+		}
+		LOGGER.debug("Finish sendActivationCode response: {}", response);
+		return response;
+	}
+
+	/**
+	 * @see OtpBusiness#sendActivationCode(Object, String)
+	 */
+	@Override
+	public ResponseDto<Boolean> sendActivationCode(ActivationAccountDTO activationAccountDTO, String ip) {
+		LOGGER.debug("Init sendActivationCode with activationAccountDTO: {}", activationAccountDTO);
+		ResponseDto<Boolean> response = null;
+		Usuario user = null;
+		Otp otp = null;
+//		boolean result = false;
+		try {
+			user = this.usuarioRepository.findByEmail(activationAccountDTO.getEmail());
+//			if (Objects.isNull(user)) {
+//				throw new OtpException("error", "error", HttpStatus.BAD_REQUEST.value(), "error");
+//			}
+			otp = getOrCreateOtp(user);
+			NotificationDTO notification = new NotificationDTO();
+			notification.setEmail(user.getEmail());
+			notification.setPhone(user.getCelular().replace("+", ""));
+			Map<String, String> attributes = new HashMap<>();
+			if (MedioVerificacion.EMAIL.equals(user.getMedioVerificacion())) {
+//				notification.setDefinitionKey(this.otpProperties.getNotification().getEmailComfirmationDefinitionKey());
+//				String baseUrl = this.configuration.getConfiguration(CONF_BASE_PATH_URL);
+//				baseUrl = baseUrl + "?c=" + otp.getClave() + "&n=" + user.getUsuarioId().toString() + REGISTER_PATH;
+//				attributes.put(MC_URL_PARAM, baseUrl);
+			} else {
+//				notification.setMessage(this.message.getFormatedMessage(UIM003));
+				attributes.put(MC_KEY_PARAM, otp.getClave());
+//				notification.setDefinitionKey(this.otpProperties.getNotification().getSmsComfirmationDefinitionKey());
+			}
+			notification.setAttributes(attributes);
+//			result = this.notification.sendNotification(notification, user.getMedioVerificacion(), ip);
+//			response = new Response<>(HttpStatus.OK.value(), message.getMessage(UIM011), message.getMessage(DIM011),
+//					EMPTY_STRING, EMPTY_STRING, result);
+//		} catch (OtpException e) {
+//			LOGGER.error(LOG_VALIDATE_OTP_CODE_ERROR, e);
+//			response = new ResponseDto<>(e.getStatus(), e.getUserMessage(), e.getMessage(), e.getErrorCode(),
+//					EMPTY_STRING);
+		} catch (Exception e) {
+			LOGGER.error(LOG_SEND_ACTIVATION_CODE_ERROR, e);
+//			response = new Response<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), message.getMessage(UEM000),
+//					message.getMessage(DEM000), DEM000, EMPTY_STRING, null);
+		} finally {
+//			UUID uuid = UUID.randomUUID();
+//			Audit audit = new Audit(uuid.toString(), ip, null == user ? null : user.getEmail(), null, null, null,
+//					new Date(), PORTAL, OTP_API, AuditOperation.SEND_OTP.getValue(), activationAccountDTO.toString(),
+//					response, EMPTY_STRING);
+//			String amqpMessage = this.gson.toJson(audit);
+//			amqp.sendMessage(AMPQ_QUEUE_EXCHANGE, AMPQ_ROUTINGKEY_AUDIT, amqpMessage);
+		}
+		LOGGER.debug("Finish sendActivationCode response: {}", response);
+		return response;
+	}
+
+	/**
+	 * @see OtpBusiness#validateActivationCode(String, String, String)
+	 */
+	@Override
+	public ResponseDto<OtpDTO> validateActivationCode(String email, String key, String ip) {
+		LOGGER.info("Init validateActivationCode with code: {}", key);
+		ResponseDto<OtpDTO> response = null;
+		OtpDTO otpDTO = new OtpDTO(false);
+		Usuario user = null;
+		try {
+			user = this.usuarioRepository.findByEmail(email);
+			if (Objects.nonNull(user)) {
+				LOGGER.info(LOG_USER_EMAIL, user.getEmail());
+				response = getResponseByUserAndKey(user, key);
+			} else {
+//				response = new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), message.getMessage(UEM017),
+//						message.getMessage(DEM029), DEM029, EMPTY_STRING, otpDTO);
+			}
+		} catch (OtpException e) {
+			LOGGER.error(LOG_VALIDATE_ACTIVATION_CODE_ERROR, e);
+//			response = new ResponseDto<>(e.getStatus(), e.getUserMessage(), e.getMessage(), e.getErrorCode(),
+//					EMPTY_STRING);
+		} catch (Exception e) {
+			LOGGER.error(LOG_VALIDATE_ACTIVATION_CODE_ERROR, e);
+//			response = new ResponseDto<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), message.getMessage(UEM000),
+//					message.getMessage(DEM000), DEM000, EMPTY_STRING, null);
+		} finally {
+//			UUID uuid = UUID.randomUUID();
+//			Audit audit = new Audit(uuid.toString(), ip, null == user ? null : user.getEmail(), null, null, null,
+//					new Date(), PORTAL, OTP_API, AuditOperation.VALIDATE_OTP.getValue(), key, response, EMPTY_STRING);
+//			String amqpMessage = this.gson.toJson(audit);
+//			amqp.sendMessage(AMPQ_QUEUE_EXCHANGE, AMPQ_ROUTINGKEY_AUDIT, amqpMessage);
+		}
+		return response;
+	}
+
+	/**
+	 * Permite devolver una respuesta precisa del estado de la validación de la
+	 * clave suministrada
+	 *
+	 * @param user Usuario que se autentica
+	 * @param key  clave ingresada por el usuario
+	 * @return Response
+	 * @throws OtpException
+	 */
+	private ResponseDto<OtpDTO> getResponseByUserAndKey(Usuario user, String key) throws OtpException {
+		ResponseDto<OtpDTO> response = null;
+		Optional<Otp> optionalOtp = otpRepository.findFirstByUsuarioOrderByFechaCreacionDesc(user);
+		OtpDTO otpDTO = new OtpDTO(false);
+		if (optionalOtp.isEmpty()) {
+//			throw new OtpException(message.getMessage(DEM044), message.getMessage(DEM044),
+//					HttpStatus.BAD_REQUEST.value(), DEM044);
+		}
+		Otp otp = optionalOtp.get();
+		if (otp.getUsado().booleanValue() || otp.getFechaVencimiento().before(Timestamp.valueOf(LocalDateTime.now()))) {
+//			throw new OtpException(message.getMessage(DEM031), message.getMessage(UEM025),
+//					HttpStatus.BAD_REQUEST.value(), DEM031);
+		}
+		if (otp.getIntentos() > 4) {
+//			throw new OtpException(message.getMessage(UEM027), message.getMessage(UEM027),
+//					HttpStatus.BAD_REQUEST.value(), UEM027);
+		}
+		if (!otp.getClave().equalsIgnoreCase(key)) {
+			otp.setIntentos(otp.getIntentos() + 1);
+//			response = new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), message.getMessage(UEM025),
+//					message.getMessage(DEM031), DEM031, EMPTY_STRING, otpDTO);
+		} else {
+//			response = new ResponseDto<>(HttpStatus.OK.value(), this.message.getMessage(DIM007),
+//					this.message.getMessage(DIM007), EMPTY_STRING, EMPTY_STRING, otpDTO);
+			otp.setIntentos(otp.getIntentos() + 1);
+			otp.setUsado(true);
+			otpDTO.setAttempts(otp.getIntentos());
+			otpDTO.setValid(true);
+		}
+		otpRepository.saveAndFlush(otp);
+		return response;
+	}
+
+	/**
+	 * Permite obtener o crear un nuevo Otp. Si encuentra uno vigente, reutiliza
+	 * este espacio de la base de datos, modificando la clave y la fecha de
+	 * vencimiento.
+	 *
+	 * @param user modelo usuario
+	 * @return Otp
+	 */
+	private Otp getOrCreateOtp(Usuario user) {
+		Optional<Otp> optionalOtp = this.otpRepository.findCurrentOtp(user, Timestamp.valueOf(LocalDateTime.now()),
+				Integer.valueOf(/* this.configuration.getConfiguration(CONF_OTP_MAX_ATTEMPTS)) */"3"));
+		Otp otp;
+		int validityHours = Integer.parseInt(/* this.configuration.getConfiguration(CONF_OTP_VALIDITY_IN_HOURS) */"1");
+		if (optionalOtp.isPresent()) {
+			otp = optionalOtp.get();
+		} else {
+			otp = new Otp();
+			otp.setUsuario(user);
+			otp.setUsado(false);
+		}
+		otp.setClave(RandomStringUtils.random(6, false, true).toUpperCase());
+		otp.setFechaCreacion(Timestamp.valueOf(LocalDateTime.now()));
+		otp.setFechaVencimiento(Timestamp.valueOf(LocalDateTime.now().plusHours(validityHours)));
+		otp.setIntentos(0);
+		this.otpRepository.save(otp);
+		return otp;
+	}
+
+	/**
+	 * Permite obtener el usuario a partir del jwt
+	 *
+	 * @param jwt jwt del usuario
+	 * @return Usuario
+	 * @throws OtpException
+	 */
+//	private Usuario getUserByJwt(String jwt) throws OtpException {
+//		try {
+//			JSONObject infoAdviser = Utilities.decodeUserInfo(jwt);
+//			String email = this.gson.fromJson(infoAdviser.get("email"), String.class);
+//			return this.usuarioRepository.findByEmail(email);
+//		} catch (Exception e) {
+//			throw new OtpException(message.getMessage(DEM038), message.getMessage(UEM022),
+//					HttpStatus.BAD_REQUEST.value(), DEM038);
+//		}
+//	}
+
+	// metodo de pruebas!!! andres.jurado
+	public static String generateOtp(int optLength) {
+		SplittableRandom splittableRandom = new SplittableRandom();
+		StringBuilder stringBuilder = new StringBuilder();
+		for (int i = 0; i < optLength; i++) {
+			stringBuilder.append(splittableRandom.nextInt(0, 10));
+		}
+		return stringBuilder.toString();
+	}
+
+	// metodo de pruebas!!! andres.jurado
+	public static void main(String[] args) {
+
+		OtpRequestDTO request = new OtpRequestDTO();
+		request.setValue("12345");
+
+//		OtpBusinessImpl otpBusinessImpl = new OtpBusinessImpl();
+//		otpBusinessImpl.sendOtpCode(/* String jwt, */ request, "127.0.0.1");
+
+//		Map<String, String> otps = new HashMap<>();
+//		int c = 0;
+//		for (int i = 0; i < 100000; i++) {
+//			String otp = RandomStringUtils.random(5, false, true);
+//			if (!otps.containsKey(otp)) {
+//				otps.put(otp, otp);
+////				System.err.println("genero bien : " + otp);
+//			} else {
+//				System.err.println("Ya se genero el otp: " + otp);
+//				c++;
+//			}
+//		}
+//		System.err.println(
+//				"RandomStringUtils.random(6, false, true).toUpperCase() : " + RandomStringUtils.random(5, false, true));
+//		System.err.println("de 100000 otps no se repitieron: " + otps.size() + ", numero de repetidos: " + c);
+	}
+
+}

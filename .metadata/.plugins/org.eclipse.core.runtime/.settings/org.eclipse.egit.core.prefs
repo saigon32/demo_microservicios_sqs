@@ -1,0 +1,4 @@
+GitRepositoriesView.GitDirectories=C\:\\wks_dislicores\\dislicores-b2b-register-api\\.git;C\:\\wks_dislicores\\dislicores-b2b-otp-api\\.git;C\:\\wks_dislicores\\microservice-springboot-docker\\.git;C\:\\wks_dislicores\\dislicores-b2b-notification-api\\.git;C\:\\wks_dislicores\\dislicores-b2b-authentication-api\\.git;C\:\\wks_dislicores\\dislicores-siesa-integration-api\\.git;
+GitRepositoriesView.GitDirectories.relative=dislicores-b2b-register-api\\.git;dislicores-b2b-otp-api\\.git;microservice-springboot-docker\\.git;dislicores-b2b-notification-api\\.git;dislicores-b2b-authentication-api\\.git;dislicores-siesa-integration-api\\.git;
+core_autoIgnoreDerivedResources=false
+eclipse.preferences.version=1

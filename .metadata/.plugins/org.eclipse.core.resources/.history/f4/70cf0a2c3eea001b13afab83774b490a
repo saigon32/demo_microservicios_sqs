@@ -1,0 +1,358 @@
+package com.familia.api.otp.business;
+
+import static com.familia.api.otp.util.LoggerConstants.LOG_SEND_ACTIVATION_CODE_ERROR;
+import static com.familia.api.otp.util.LoggerConstants.LOG_USER_EMAIL;
+import static com.familia.api.otp.util.LoggerConstants.LOG_VALIDATE_ACTIVATION_CODE_ERROR;
+import static com.familia.api.otp.util.LoggerConstants.LOG_VALIDATE_OTP_CODE_ERROR;
+import static com.familia.api.otp.util.OtpConstants.AMPQ_QUEUE_EXCHANGE;
+import static com.familia.api.otp.util.OtpConstants.AMPQ_ROUTINGKEY_AUDIT;
+import static com.familia.api.otp.util.OtpConstants.CONF_BASE_PATH_URL;
+import static com.familia.api.otp.util.OtpConstants.CONF_OTP_MAX_ATTEMPTS;
+import static com.familia.api.otp.util.OtpConstants.CONF_OTP_VALIDITY_IN_HOURS;
+import static com.familia.api.otp.util.OtpConstants.DEM000;
+import static com.familia.api.otp.util.OtpConstants.DEM029;
+import static com.familia.api.otp.util.OtpConstants.DEM031;
+import static com.familia.api.otp.util.OtpConstants.DEM038;
+import static com.familia.api.otp.util.OtpConstants.DEM044;
+import static com.familia.api.otp.util.OtpConstants.DIM007;
+import static com.familia.api.otp.util.OtpConstants.DIM011;
+import static com.familia.api.otp.util.OtpConstants.MC_DATE_PARAM;
+import static com.familia.api.otp.util.OtpConstants.MC_KEY_PARAM;
+import static com.familia.api.otp.util.OtpConstants.MC_NAME_PARAM;
+import static com.familia.api.otp.util.OtpConstants.MC_TIME_PARAM;
+import static com.familia.api.otp.util.OtpConstants.MC_URL_PARAM;
+import static com.familia.api.otp.util.OtpConstants.OTP_API;
+import static com.familia.api.otp.util.OtpConstants.PORTAL;
+import static com.familia.api.otp.util.OtpConstants.REGISTER_PATH;
+import static com.familia.api.otp.util.OtpConstants.UEM000;
+import static com.familia.api.otp.util.OtpConstants.UEM017;
+import static com.familia.api.otp.util.OtpConstants.UEM022;
+import static com.familia.api.otp.util.OtpConstants.UEM025;
+import static com.familia.api.otp.util.OtpConstants.UEM027;
+import static com.familia.api.otp.util.OtpConstants.UIM003;
+import static com.familia.api.otp.util.OtpConstants.UIM005;
+import static com.familia.api.otp.util.OtpConstants.UIM011;
+import static com.familia.plugin.utilities.util.UtilConstants.EMPTY_STRING;
+
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import com.familia.api.otp.domain.ActivationAccountDTO;
+import com.familia.api.otp.domain.NotificationDTO;
+import com.familia.api.otp.domain.OtpDTO;
+import com.familia.api.otp.domain.OtpRequestDTO;
+import com.familia.api.otp.exception.OtpException;
+import com.familia.api.otp.model.Otp;
+import com.familia.api.otp.model.Usuario;
+import com.familia.api.otp.provider.NotificationProvider;
+import com.familia.api.otp.repository.OtpRepository;
+import com.familia.api.otp.repository.UsuarioRepository;
+import com.familia.api.otp.util.MedioVerificacion;
+import com.familia.api.otp.util.OtpProperties;
+import com.familia.plugin.amqp.SendAmqpMessage;
+import com.familia.plugin.utilities.domain.Audit;
+import com.familia.plugin.utilities.domain.Response;
+import com.familia.plugin.utilities.util.AuditOperation;
+import com.familia.plugin.utilities.util.ConfigurationResource;
+import com.familia.plugin.utilities.util.MessageResource;
+import com.familia.plugin.utilities.util.Utilities;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+@Service
+public class OtpBusinessImpl implements OtpBusiness {
+
+	/** Logger */
+	private static final Logger LOGGER = LoggerFactory.getLogger(OtpBusinessImpl.class);
+	/** Objeto de acceso a la capa de datos para la entidad Propiedades */
+	private final ConfigurationResource configuration;
+	@Autowired
+	private OtpRepository otpRepository;
+	@Autowired
+	private UsuarioRepository usuarioRepository;
+	@Autowired
+	private NotificationProvider notification;
+	/** Objeto para la carga de mensajes del sistema */
+	private final MessageResource message;
+	/** JSON/Object serializer */
+	private final Gson gson;
+	/** Objeto de auditoria */
+	private final SendAmqpMessage amqp;
+	private final OtpProperties otpProperties;
+
+	/**
+	 * Metodo constructor
+	 */
+	@Autowired
+	public OtpBusinessImpl(ConfigurationResource configuration, MessageResource message, SendAmqpMessage amqp,
+			OtpProperties otpProperties) {
+		this.otpProperties = otpProperties;
+		this.configuration = configuration;
+		this.message = message;
+		this.amqp = amqp;
+		this.gson = new Gson();
+	}
+
+	@Override
+	public Response<Void> sendOtpCode(String jwt, OtpRequestDTO request, String ip) {
+		LOGGER.debug("Init sendOtpCode with request: {}", request);
+		Response<Void> response = null;
+		Usuario user = null;
+		MedioVerificacion mode;
+		try {
+			user = getUserByJwt(jwt);
+			if (Objects.nonNull(user)) {
+				Otp otp = getOrCreateOtp(user);
+				NotificationDTO notification = new NotificationDTO();
+				notification.setEmail(user.getEmail());
+				notification.setPhone(user.getCelular().replace("+", ""));
+				Map<String, String> attributes = new HashMap<>();
+				attributes.put(MC_KEY_PARAM, otp.getClave());
+				if (MedioVerificacion.EMAIL.toString().equals(request.getValue())) {
+					notification.setDefinitionKey(this.otpProperties.getNotification().getEmailOtpDefinitionKey());
+					attributes.put(MC_NAME_PARAM, user.getNombre());
+					SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+					SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+					Date date = new Date();
+					Calendar calendar = Calendar.getInstance();
+					calendar.setTime(date);
+					calendar.add(Calendar.DATE, 1);
+					date = calendar.getTime();
+					attributes.put(MC_DATE_PARAM, dateFormat.format(date));
+					attributes.put(MC_TIME_PARAM, timeFormat.format(date));
+					mode = MedioVerificacion.EMAIL;
+				} else {
+//					String otpMessage = this.message.getFormatedMessage(UIM019, otp.getClave(),
+//							otp.getFechaVencimiento().toString());
+//					this.notification.sendOtpToSms(user.getCelular(), otpMessage, ip);
+				    notification.setMessage(this.message.getMessage(UIM005));
+					mode = MedioVerificacion.SMS;
+					notification.setDefinitionKey(this.otpProperties.getNotification().getSmsOtpDefinitionKey());
+				}
+				notification.setAttributes(attributes);
+				this.notification.sendNotification(notification, mode, ip);
+				response = new Response<>(HttpStatus.OK.value(), message.getMessage(UIM011), message.getMessage(DIM011),
+						EMPTY_STRING, EMPTY_STRING, null);
+			} else {
+				response = new Response<>(HttpStatus.BAD_REQUEST.value(), message.getMessage(UEM017),
+						message.getMessage(DEM029), EMPTY_STRING, EMPTY_STRING);
+			}
+
+		} catch (OtpException e) {
+			LOGGER.error(LOG_VALIDATE_OTP_CODE_ERROR, e);
+			response = new Response<>(e.getStatus(), e.getUserMessage(), e.getMessage(), e.getErrorCode(),
+					EMPTY_STRING);
+		} catch (Exception e) {
+			LOGGER.error(LOG_SEND_ACTIVATION_CODE_ERROR, e);
+			response = new Response<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), message.getMessage(UEM000),
+					message.getMessage(DEM000), DEM000, EMPTY_STRING, null);
+		} finally {
+			UUID uuid = UUID.randomUUID();
+			Audit audit = new Audit(uuid.toString(), ip, null == user ? null : user.getEmail(), null, null, null,
+					new Date(), PORTAL, OTP_API, AuditOperation.SEND_OTP.getValue(), request.toString(), response,
+					EMPTY_STRING);
+			String amqpMessage = this.gson.toJson(audit);
+			amqp.sendMessage(AMPQ_QUEUE_EXCHANGE, AMPQ_ROUTINGKEY_AUDIT, amqpMessage);
+		}
+		LOGGER.debug("Finish sendActivationCode response: {}", response);
+		return response;
+	}
+
+	/**
+	 * @see OtpBusiness#sendActivationCode(Object, String)
+	 */
+	@Override
+	public Response<Boolean> sendActivationCode(ActivationAccountDTO activationAccountDTO, String ip) {
+		LOGGER.debug("Init sendActivationCode with activationAccountDTO: {}", activationAccountDTO);
+		Response<Boolean> response = null;
+		Usuario user = null;
+		Otp otp = null;
+		boolean result = false;
+		try {
+			user = this.usuarioRepository.findByEmail(activationAccountDTO.getEmail());
+			if (Objects.isNull(user)) {
+				throw new OtpException("error", "error", HttpStatus.BAD_REQUEST.value(), "error");
+			}
+			otp = getOrCreateOtp(user);
+			NotificationDTO notification = new NotificationDTO();
+			notification.setEmail(user.getEmail());
+			notification.setPhone(user.getCelular().replace("+", ""));
+			Map<String, String> attributes = new HashMap<>();
+			if (MedioVerificacion.EMAIL.equals(user.getMedioVerificacion())) {
+				notification.setDefinitionKey(this.otpProperties.getNotification().getEmailComfirmationDefinitionKey());
+				String baseUrl = this.configuration
+						.getConfiguration(CONF_BASE_PATH_URL);
+				baseUrl = baseUrl + "?c=" + otp.getClave() + "&n=" + user.getUsuarioId().toString() + REGISTER_PATH;
+				attributes.put(MC_URL_PARAM, baseUrl);
+			} else {
+			    notification.setMessage(this.message.getFormatedMessage(UIM003));
+//				String otpMessage = this.message.getFormatedMessage(UIM010, otp.getClave(),
+//						otp.getFechaVencimiento().toString());
+//				result = this.notification.sendOtpToSms(user.getCelular(), otpMessage, ip);
+				attributes.put(MC_KEY_PARAM, otp.getClave());
+				notification.setDefinitionKey(this.otpProperties.getNotification().getSmsComfirmationDefinitionKey());
+			}
+			notification.setAttributes(attributes);
+			result = this.notification.sendNotification(notification, user.getMedioVerificacion(), ip);
+			response = new Response<>(HttpStatus.OK.value(), message.getMessage(UIM011), message.getMessage(DIM011),
+					EMPTY_STRING, EMPTY_STRING, result);
+		} catch (OtpException e) {
+			LOGGER.error(LOG_VALIDATE_OTP_CODE_ERROR, e);
+			response = new Response<>(e.getStatus(), e.getUserMessage(), e.getMessage(), e.getErrorCode(),
+					EMPTY_STRING);
+		} catch (Exception e) {
+			LOGGER.error(LOG_SEND_ACTIVATION_CODE_ERROR, e);
+			response = new Response<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), message.getMessage(UEM000),
+					message.getMessage(DEM000), DEM000, EMPTY_STRING, null);
+		} finally {
+			UUID uuid = UUID.randomUUID();
+			Audit audit = new Audit(uuid.toString(), ip, null == user ? null : user.getEmail(), null, null, null,
+					new Date(), PORTAL, OTP_API, AuditOperation.SEND_OTP.getValue(), activationAccountDTO.toString(),
+					response, EMPTY_STRING);
+			String amqpMessage = this.gson.toJson(audit);
+			amqp.sendMessage(AMPQ_QUEUE_EXCHANGE, AMPQ_ROUTINGKEY_AUDIT, amqpMessage);
+		}
+		LOGGER.debug("Finish sendActivationCode response: {}", response);
+		return response;
+	}
+
+	/**
+	 * @see OtpBusiness#validateActivationCode(String, String, String)
+	 */
+	@Override
+	public Response<OtpDTO> validateActivationCode(String email, String key, String ip) {
+		LOGGER.info("Init validateActivationCode with code: {}", key);
+		Response<OtpDTO> response = null;
+		OtpDTO otpDTO = new OtpDTO(false);
+		Usuario user = null;
+		try {
+			user = this.usuarioRepository.findByEmail(email);
+			if (Objects.nonNull(user)) {
+				LOGGER.info(LOG_USER_EMAIL, user.getEmail());
+				response = getResponseByUserAndKey(user, key);
+			} else {
+				response = new Response<>(HttpStatus.BAD_REQUEST.value(), message.getMessage(UEM017),
+						message.getMessage(DEM029), DEM029, EMPTY_STRING, otpDTO);
+			}
+		} catch (OtpException e) {
+			LOGGER.error(LOG_VALIDATE_ACTIVATION_CODE_ERROR, e);
+			response = new Response<>(e.getStatus(), e.getUserMessage(), e.getMessage(), e.getErrorCode(),
+					EMPTY_STRING);
+		} catch (Exception e) {
+			LOGGER.error(LOG_VALIDATE_ACTIVATION_CODE_ERROR, e);
+			response = new Response<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), message.getMessage(UEM000),
+					message.getMessage(DEM000), DEM000, EMPTY_STRING, null);
+		} finally {
+			UUID uuid = UUID.randomUUID();
+			Audit audit = new Audit(uuid.toString(), ip, null == user ? null : user.getEmail(), null, null, null,
+					new Date(), PORTAL, OTP_API, AuditOperation.VALIDATE_OTP.getValue(), key, response, EMPTY_STRING);
+			String amqpMessage = this.gson.toJson(audit);
+			amqp.sendMessage(AMPQ_QUEUE_EXCHANGE, AMPQ_ROUTINGKEY_AUDIT, amqpMessage);
+		}
+		return response;
+	}
+
+	/**
+	 * Permite devolver una respuesta precisa del estado de la validación de la
+	 * clave suministrada
+	 *
+	 * @param user Usuario que se autentica
+	 * @param key  clave ingresada por el usuario
+	 * @return Response
+	 * @throws OtpException
+	 */
+	private Response<OtpDTO> getResponseByUserAndKey(Usuario user, String key) throws OtpException {
+		Response<OtpDTO> response;
+		Optional<Otp> optionalOtp = otpRepository.findFirstByUsuarioOrderByFechaCreacionDesc(user);
+		OtpDTO otpDTO = new OtpDTO(false);
+		if (optionalOtp.isEmpty()) {
+			throw new OtpException(message.getMessage(DEM044), message.getMessage(DEM044),
+					HttpStatus.BAD_REQUEST.value(), DEM044);
+		}
+		Otp otp = optionalOtp.get();
+		if (otp.getUsado().booleanValue() || otp.getFechaVencimiento().before(Timestamp.valueOf(LocalDateTime.now()))) {
+			throw new OtpException(message.getMessage(DEM031), message.getMessage(UEM025),
+					HttpStatus.BAD_REQUEST.value(), DEM031);
+		}
+		if (otp.getIntentos() > 4) {
+			throw new OtpException(message.getMessage(UEM027), message.getMessage(UEM027),
+					HttpStatus.BAD_REQUEST.value(), UEM027);
+		}
+		if (!otp.getClave().equalsIgnoreCase(key)) {
+			otp.setIntentos(otp.getIntentos() + 1);
+			response = new Response<>(HttpStatus.BAD_REQUEST.value(), message.getMessage(UEM025),
+					message.getMessage(DEM031), DEM031, EMPTY_STRING, otpDTO);
+		} else {
+			response = new Response<>(HttpStatus.OK.value(), this.message.getMessage(DIM007),
+					this.message.getMessage(DIM007), EMPTY_STRING, EMPTY_STRING, otpDTO);
+			otp.setIntentos(otp.getIntentos() + 1);
+			otp.setUsado(true);
+			otpDTO.setAttempts(otp.getIntentos());
+			otpDTO.setValid(true);
+		}
+		otpRepository.saveAndFlush(otp);
+		return response;
+	}
+
+	/**
+	 * Permite obtener o crear un nuevo Otp. Si encuentra uno vigente, reutiliza
+	 * este espacio de la base de datos, modificando la clave y la fecha de
+	 * vencimiento.
+	 *
+	 * @param user modelo usuario
+	 * @return Otp
+	 */
+	private Otp getOrCreateOtp(Usuario user) {
+		Optional<Otp> optionalOtp = this.otpRepository.findCurrentOtp(user, Timestamp.valueOf(LocalDateTime.now()),
+				Integer.valueOf(this.configuration.getConfiguration(CONF_OTP_MAX_ATTEMPTS)));
+		Otp otp;
+		int validityHours = Integer.parseInt(this.configuration.getConfiguration(CONF_OTP_VALIDITY_IN_HOURS));
+		if (optionalOtp.isPresent()) {
+			otp = optionalOtp.get();
+		} else {
+			otp = new Otp();
+			otp.setUsuario(user);
+			otp.setUsado(false);
+		}
+		otp.setClave(RandomStringUtils.random(6, false, true).toUpperCase());
+		otp.setFechaCreacion(Timestamp.valueOf(LocalDateTime.now()));
+		otp.setFechaVencimiento(Timestamp.valueOf(LocalDateTime.now().plusHours(validityHours)));
+		otp.setIntentos(0);
+		this.otpRepository.save(otp);
+		return otp;
+	}
+
+	/**
+	 * Permite obtener el usuario a partir del jwt
+	 *
+	 * @param jwt jwt del usuario
+	 * @return Usuario
+	 * @throws OtpException
+	 */
+	private Usuario getUserByJwt(String jwt) throws OtpException {
+		try {
+			JsonObject infoAdviser = Utilities.decodeUserInfo(jwt);
+			String email = this.gson.fromJson(infoAdviser.get("email"), String.class);
+			return this.usuarioRepository.findByEmail(email);
+		} catch (Exception e) {
+			throw new OtpException(message.getMessage(DEM038), message.getMessage(UEM022),
+					HttpStatus.BAD_REQUEST.value(), DEM038);
+		}
+	}
+
+}

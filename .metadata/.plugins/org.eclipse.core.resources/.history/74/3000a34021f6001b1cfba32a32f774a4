@@ -1,0 +1,14 @@
+package com.dislicores.api.otp.business;
+
+import com.dislicores.api.otp.domain.OtpDTO;
+import com.dislicores.api.otp.domain.ResponseDto;
+import com.dislicores.api.otp.domain.UserDTO;
+import com.dislicores.api.otp.exception.OtpException;
+
+public interface OtpBusiness {
+
+	void createOtpCode(UserDTO userDTO, String ip) throws OtpException;
+
+	ResponseDto<OtpDTO> validateActivationCode(UserDTO userDTO, String ip) throws OtpException;
+
+}

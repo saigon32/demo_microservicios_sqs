@@ -1,0 +1,8 @@
+package com.familia.api.otp.util;
+
+/**
+ * Enumeracion con los posibles medios a los que se puede enviar el codigo otp
+ */
+public enum MedioVerificacion {
+    SMS, EMAIL;
+}

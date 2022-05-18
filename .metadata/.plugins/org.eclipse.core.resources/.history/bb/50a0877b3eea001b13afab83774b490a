@@ -1,0 +1,120 @@
+package com.familia.api.otp.model;
+
+import java.io.Serializable;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import com.familia.api.otp.util.MedioVerificacion;
+
+/**
+ * Entidad que representa la tabla USUARIO de base de datos
+ * 
+ * @author ricardo.ayala@pragma.com.co
+ *
+ */
+@Entity
+@Table(name = "USUARIO")
+public class Usuario implements Serializable {
+
+	/**
+	 * Serializer
+	 */
+	private static final long serialVersionUID = -4186987868468413175L;
+	/** Identificador principal */
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "usuario_id")
+	private Long usuarioId;
+	/** Email del usuario */
+	@Column(name = "email", nullable = false, unique = true)
+	private String email;
+	/** Numero de celular del usuario */
+	@Column(name = "celular", nullable = false, unique = true)
+	private String celular;
+	/** Nombre del usuario */
+	@Column(name = "nombres")
+	private String nombre;
+	@Enumerated(EnumType.STRING)
+	@Column(name = "medio_verificacion")
+	private MedioVerificacion medioVerificacion;
+	
+	
+
+	/**
+	 * @return the medioVerificacion
+	 */
+	public MedioVerificacion getMedioVerificacion() {
+		return medioVerificacion;
+	}
+
+	/**
+	 * @param medioVerificacion the medioVerificacion to set
+	 */
+	public void setMedioVerificacion(MedioVerificacion medioVerificacion) {
+		this.medioVerificacion = medioVerificacion;
+	}
+
+	/**
+	 * @return the usuarioId
+	 */
+	public Long getUsuarioId() {
+		return usuarioId;
+	}
+
+	/**
+	 * @param usuarioId the usuarioId to set
+	 */
+	public void setUsuarioId(Long usuarioId) {
+		this.usuarioId = usuarioId;
+	}
+
+	/**
+	 * @return the email
+	 */
+	public String getEmail() {
+		return email;
+	}
+
+	/**
+	 * @param email the email to set
+	 */
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	/**
+	 * @return the celular
+	 */
+	public String getCelular() {
+		return celular;
+	}
+
+	/**
+	 * @param celular the celular to set
+	 */
+	public void setCelular(String celular) {
+		this.celular = celular;
+	}
+
+	/**
+	 * @return the nombre
+	 */
+	public String getNombre() {
+		return nombre;
+	}
+
+	/**
+	 * @param nombre the nombre to set
+	 */
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
+
+}

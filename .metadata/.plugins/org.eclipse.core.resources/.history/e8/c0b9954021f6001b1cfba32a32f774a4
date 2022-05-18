@@ -1,0 +1,42 @@
+package com.dislicores.api.otp.domain;
+
+import javax.validation.constraints.NotBlank;
+
+public class UserDTO {
+    @NotBlank(message = "DOA002")
+    private String tipoIdentificacion;
+    @NotBlank(message = "DOA002")
+    private String numeroIdentificacion;
+    private String key;
+
+    public String getTipoIdentificacion() {
+        return tipoIdentificacion;
+    }
+
+    public void setTipoIdentificacion(String tipoIdentificacion) {
+        this.tipoIdentificacion = tipoIdentificacion;
+    }
+
+    public String getNumeroIdentificacion() {
+        return numeroIdentificacion;
+    }
+
+    public void setNumeroIdentificacion(String numeroIdentificacion) {
+        this.numeroIdentificacion = numeroIdentificacion;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    @Override
+    public String toString() {
+        return "UserDTO [tipoIdentificacion=" + tipoIdentificacion + ", numeroIdentificacion=" + numeroIdentificacion + ", key=" + key
+                + "]";
+    }
+
+}

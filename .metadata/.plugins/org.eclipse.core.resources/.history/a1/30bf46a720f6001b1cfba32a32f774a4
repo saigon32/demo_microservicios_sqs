@@ -1,0 +1,6 @@
+package com.dislicores.api.otp.rest;
+
+public class Greeting {
+	private final Long id;
+	private final String contenido;
+}

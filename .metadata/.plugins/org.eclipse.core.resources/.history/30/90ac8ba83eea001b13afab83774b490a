@@ -1,0 +1,27 @@
+package com.familia.api.otp.util;
+
+/**
+ * clase que contiene los valores constantes usados en la auditoria de la aplicacion
+ * 
+ * @author ricardo.ayala@pragma.com.co
+ *
+ */
+public class LoggerConstants {
+
+    /**
+     * Metodo constructor
+     */
+    private LoggerConstants() {
+        // Empty constructor
+    }
+    
+    public static final String OTP_API = "Codigo OTP de verificacion";
+
+    /* Constantes para los mensajes de LOG */
+    public static final String LOG_SEND_OTP_CODE_ERROR = "Error in sendOtpCode";
+    public static final String LOG_VALIDATE_OTP_CODE_ERROR = "Error in validateOtpCode";
+    public static final String LOG_SEND_ACTIVATION_CODE_ERROR = "Error in sendActivationCode";
+    public static final String LOG_VALIDATE_ACTIVATION_CODE_ERROR = "Error in validateActivationCode";
+    public static final String LOG_USER_EMAIL = "User: {}";
+    
+}

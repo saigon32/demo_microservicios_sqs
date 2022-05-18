@@ -1,0 +1,32 @@
+package com.familia.api.otp.business;
+
+import com.familia.api.otp.domain.ActivationAccountDTO;
+import com.familia.api.otp.domain.OtpDTO;
+import com.familia.api.otp.domain.OtpRequestDTO;
+import com.familia.plugin.utilities.domain.Response;
+
+public interface OtpBusiness {
+
+	/**
+	 * Permite enviar un OTP para la confirmacion de la cuenta
+	 * 
+	 * @param activationAccountDTO Objeto con la iformacion del envio
+	 * @param ip                   ip desde la cual se realiza la solicitud
+	 * @return Objeto de respuesta indicando si se realizo correctamente el envio o
+	 *         no
+	 */
+	Response<Boolean> sendActivationCode(ActivationAccountDTO activationAccountDTO, String ip);
+
+	/**
+	 * Permite validar el codigo de confirmarcion de cuenta de usuario
+	 * 
+	 * @param email
+	 * @param key
+	 * @param ip
+	 * @return
+	 */
+	Response<OtpDTO> validateActivationCode(String email, String key, String ip);
+
+	Response<Void> sendOtpCode(String jwt, OtpRequestDTO request, String ip);
+
+}

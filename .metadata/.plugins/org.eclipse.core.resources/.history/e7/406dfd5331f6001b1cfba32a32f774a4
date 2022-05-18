@@ -1,0 +1,20 @@
+package com.dislicores.api.otp;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Contact;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.info.License;
+import io.swagger.v3.oas.annotations.servers.Server;
+
+@SpringBootApplication
+@OpenAPIDefinition(info = @Info(title = "B2B OTP API", description = "Microservicio que permite crear y administrar los codigos OTP en el aplicativo B2B", version = "1.0.0", contact = @Contact(email = "andres.jurado@pragma.com.co", name = "Pragma S.A", url = "www.pragma.com.co"), license = @License(name = "MIT", url = "https://opensource.org/licenses/MIT")), servers = @Server(description = "Url Api Gateway. Reemplazar stage por dev, staging o pdn según corresponda", url = "https://h73euwasy3.execute-api.us-east-1.amazonaws.com/stage/b2b/otp"))
+public class DemoMicroserviceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(DemoMicroserviceApplication.class, args);
+	}
+
+}

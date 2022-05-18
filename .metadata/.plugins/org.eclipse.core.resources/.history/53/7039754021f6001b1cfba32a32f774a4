@@ -1,0 +1,52 @@
+package com.dislicores.api.otp.util;
+
+import java.text.MessageFormat;
+import java.util.ResourceBundle;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+@Component
+public class MessagesUtil {
+	/** Logger */
+	private static final Logger LOGGER = LoggerFactory.getLogger(MessagesUtil.class);
+	/** Ubicacion y nombre del archivo de propiedades */
+	private static final String MESSAGE_PROPERTIES = "messages/messages";
+
+	/**
+	 * Permite obtener un mensaje mediante el codigo que lo identifica
+	 * 
+	 * @param code Codigo que identifica el mensaje
+	 * @return Mensaje
+	 */
+	public String getMessage(String code) {
+		var message = "";
+		try {
+			var bundle = ResourceBundle.getBundle(MESSAGE_PROPERTIES);
+			message = bundle.getString(code);
+		} catch (Exception e) {
+			LOGGER.error("Error loading message property: {}", code);
+		}
+		return message;
+	}
+
+	/**
+	 * Permite obtener un mensaje mediante el codigo que lo identifica, reemplazando
+	 * además los parámetros enviados
+	 * 
+	 * @param code   Codigo que identifica el mensaje
+	 * @param params Valores a reemplazar en el mensaje
+	 * @return Mensaje
+	 */
+	public String getFormatedMessage(String code, Object params) {
+		var message = "";
+		try {
+			var bundle = ResourceBundle.getBundle(MESSAGE_PROPERTIES);
+			message = MessageFormat.format(bundle.getString(code), params);
+		} catch (Exception e) {
+			LOGGER.error("Error loading message property: {}", code);
+		}
+		return message;
+	}
+}

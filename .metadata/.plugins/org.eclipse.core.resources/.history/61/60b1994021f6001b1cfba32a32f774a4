@@ -1,0 +1,25 @@
+package com.dislicores.api.otp.domain;
+
+import java.io.Serial;
+import java.io.Serializable;
+
+import lombok.Value;
+
+/**
+ * Clase que permite reconocer los un atributo y el mensaje de la validacion que
+ * no cumple
+ * 
+ * @author ricardo.ayala@pragma.com.co
+ * @version 1.0
+ */
+@Value
+public class FieldErrorDto implements Serializable {
+
+	@Serial
+	private static final long serialVersionUID = -8619947059150751384L;
+	/** Nombre del camp */
+	String field;
+	/** Mensaje indicando el error con el campo */
+	String message;
+
+}

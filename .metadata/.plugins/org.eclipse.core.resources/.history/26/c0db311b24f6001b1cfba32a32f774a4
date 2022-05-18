@@ -1,0 +1,5 @@
+package microservice.controller;
+
+public class MainController {
+
+}

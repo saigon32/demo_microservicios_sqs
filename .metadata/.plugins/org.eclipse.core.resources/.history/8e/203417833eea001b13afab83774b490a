@@ -1,0 +1,82 @@
+package com.familia.api.otp.provider;
+
+import static com.familia.api.otp.util.OtpConstants.DEM000;
+import static com.familia.api.otp.util.OtpConstants.UEM000;
+import static com.familia.plugin.utilities.util.UtilConstants.IP_ADDRESS;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
+import com.familia.api.otp.domain.NotificationDTO;
+import com.familia.api.otp.exception.OtpException;
+import com.familia.api.otp.util.MedioVerificacion;
+import com.familia.api.otp.util.OtpProperties;
+import com.familia.plugin.utilities.domain.Response;
+import com.familia.plugin.utilities.util.MessageResource;
+
+/**
+ * Clase que define un componente para el envio de notificaciones
+ *
+ * @author ricardo.ayala@pragma.com.co
+ *
+ */
+@Component
+public class NotificationProvider {
+
+	/** Logger */
+	private static final Logger LOGGER = LoggerFactory.getLogger(NotificationProvider.class);
+	/** Objeto para la carga de propiedades */
+	private final OtpProperties properties;
+	/** Objeto para el consumo de Api Rest */
+	private final RestTemplate restTemplate;
+	/** Objeto para la carga de mensajes del sistema */
+	private final MessageResource message;
+
+	/**
+	 * Metodo constructor
+	 *
+	 */
+	public NotificationProvider(RestTemplate restTemplate, OtpProperties properties, MessageResource message) {
+		this.message = message;
+		this.restTemplate = restTemplate;
+		this.properties = properties;
+	}
+	
+	/**
+	 * Permite el envio de SMS a un usaurio
+	 * 
+	 * @param user
+	 * @param ip
+	 * @return
+	 * @throws RecoveryException
+	 */
+	public boolean sendNotification(NotificationDTO user, MedioVerificacion notificationMode, String ip)
+			throws OtpException {
+		LOGGER.debug("Init sendNotification with destination:", user);
+		boolean result = false;
+		try {
+			MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+			headers.add(IP_ADDRESS, ip);
+			HttpEntity<NotificationDTO> requestEntity = new HttpEntity<>(user, headers);
+			String path = MedioVerificacion.EMAIL.equals(notificationMode)
+					? this.properties.getNotification().getMcEmail()
+					: this.properties.getNotification().getMcSms();
+			Response<?> response = this.restTemplate.postForObject(
+					this.properties.getNotification().getEndpointUrl() + path,
+					requestEntity, Response.class);
+			result = (Boolean) response.getData();
+		} catch (Exception e) {
+			throw new OtpException(this.message.getMessage(DEM000), this.message.getMessage(UEM000),
+					HttpStatus.INTERNAL_SERVER_ERROR.value(), DEM000, e);
+		}
+		LOGGER.debug("Finish sendNotification");
+		return result;
+	}
+
+}

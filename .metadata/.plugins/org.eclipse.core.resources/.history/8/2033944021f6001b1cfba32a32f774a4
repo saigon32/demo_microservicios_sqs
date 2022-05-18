@@ -1,0 +1,42 @@
+package com.dislicores.api.otp.domain;
+
+import java.util.List;
+
+import lombok.Getter;
+import lombok.ToString;
+
+@Getter
+@ToString
+public class ResponseDto<T> {
+
+	private int status;
+	private String responseCode;
+	private String responseMessage;
+	private List<FieldErrorDto> fieldErrors;
+	private T data;
+
+	public ResponseDto() {
+	}
+
+	public ResponseDto(int status, String responseCode, String responseMessage, List<FieldErrorDto> fieldErrors, T data) {
+		this.status = status;
+		this.responseCode = responseCode;
+		this.responseMessage = responseMessage;
+		this.fieldErrors = fieldErrors;
+		this.data = data;
+	}
+
+	public ResponseDto(int status, String responseCode, String responseMessage, List<FieldErrorDto> fieldErrors) {
+		this(status, responseCode, responseMessage, fieldErrors, null);
+	}
+
+	public ResponseDto(int status, String responseCode, String responseMessage, T data) {
+		this(status, responseCode, responseMessage, null, data);
+	}
+
+	public ResponseDto(int status, String responseCode, String responseMessage) {
+		this(status, responseCode, responseMessage, null, null);
+
+	}
+
+}

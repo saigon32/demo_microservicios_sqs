@@ -1,0 +1,118 @@
+package com.dislicores.api.otp.rest;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.dislicores.api.otp.business.OtpBusiness;
+import com.dislicores.api.otp.domain.AuditDto;
+import com.dislicores.api.otp.domain.OtpDTO;
+import com.dislicores.api.otp.domain.ResponseDto;
+import com.dislicores.api.otp.domain.UserDTO;
+import com.dislicores.api.otp.exception.OtpException;
+import com.dislicores.api.otp.messaging.ProducerSQS;
+import com.dislicores.api.otp.util.AuditOperation;
+import com.dislicores.api.otp.util.MessagesUtil;
+import com.dislicores.api.otp.util.OtpConstants;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@RestController
+@RequestMapping("api/v1/")
+@CrossOrigin(origins = "*", methods = { RequestMethod.POST })
+@Tag(name = "OtpRest", description = "Apis REST para la generacion de OTP de los usuarios B2B Dislicores")
+public class OtpRest {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(OtpRest.class);
+
+	/** Objeto que expone la logica de negocio */
+	private final OtpBusiness otpBusiness;
+
+	/** Objeto para la carga de mensajes del sistema */
+	private final MessagesUtil messageUtil;
+
+	private final ProducerSQS producerSQS;
+
+	/**
+	 * Metodo constructor
+	 * 
+	 */
+	@Autowired
+	public OtpRest(OtpBusiness otpBusiness, MessagesUtil messageUtil, ProducerSQS producerSQS) {
+		this.otpBusiness = otpBusiness;
+		this.messageUtil = messageUtil;
+		this.producerSQS = producerSQS;
+	}
+
+	@PostMapping(value = "/createOtpCode", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Operation(description = "Validación de la identificación de un cliente contra centrales de riesgos.", summary = "Valida la información contra Truora y guarda la info del cliente en caso de cumplir con la calificación requerida")
+	@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Objeto JSON con la informacion de identificacion del cliente", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = UserDTO.class)))
+	@ApiResponse(responseCode = "200", description = "Generacion OTP exitosa", content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+	@ApiResponse(responseCode = "400", description = "Los datos recibidos no cumplen con la obligatoriedad o formatos esperados.", content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+	@ApiResponse(responseCode = "500", description = "Error inesperado durante el proceso.", content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+	public ResponseDto<OtpDTO> createOtpCode(@RequestBody(required = true) UserDTO userDTO, @RequestHeader(value = OtpConstants.IP_ADDRESS, required = true) String ipAddress) {
+		LOGGER.debug("Init createOtpCode with request {} ", userDTO);
+		ResponseDto<OtpDTO> response = new ResponseDto<>();
+		try {
+			this.otpBusiness.createOtpCode(userDTO, ipAddress);
+			response = new ResponseDto<>(HttpStatus.OK.value(), OtpConstants.DOA005, messageUtil.getMessage(OtpConstants.DOA005));
+		} catch (OtpException otpException) {
+			response = new ResponseDto<>(otpException.getStatus(), otpException.getCode(), otpException.getMessage(), otpException.getFieldErrors());
+			LOGGER.error("Error createOtpCode ", otpException);
+		} catch (Exception exception) {
+			response = new ResponseDto<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), OtpConstants.DOA000, messageUtil.getMessage(OtpConstants.DOA000));
+			LOGGER.error("Error createOtpCode ", exception);
+		} finally {
+			var audit = new AuditDto(LocalDate.now().toString(), UUID.randomUUID().toString(), ipAddress, userDTO.getTipoIdentificacion() + userDTO.getNumeroIdentificacion(), LocalDateTime.now().toString(), OtpConstants.CHANNEL, OtpConstants.FUNCTIONALITY, AuditOperation.CREATE_OTP.getValue(),
+					userDTO, response.getStatus(), response.getResponseCode(), response.getResponseMessage(), response.getData());
+			this.producerSQS.sendAuditMessage(audit);
+		}
+		LOGGER.debug("Finish createOtpCode with response {} ", response);
+		return response;
+	}
+
+	@PostMapping(value = "/validateActivationCode", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@Operation(description = "Permite validar si un codigo alfa-numerico coincide con un registro Otp vigente para el usuario", summary = "Permite validar si un codigo alfa-numerico coincide con un registro Otp vigente para el usuario")
+	@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Objeto JSON con la informacion de identificacion del cliente", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = UserDTO.class)))
+	@ApiResponse(responseCode = "200", description = "El codigo de verificacion es valido", content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+	@ApiResponse(responseCode = "400", description = "Los datos recibidos no cumplen con la obligatoriedad o formatos esperados", content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+	@ApiResponse(responseCode = "500", description = "Ocurre un error dentro del servidor, el cual se puede generar por problemas en el acceso a recursos, consultas de elementos no existentes o errores inesperados", content = @Content(schema = @Schema(implementation = ResponseDto.class)))
+	public ResponseDto<OtpDTO> validateActivationCode(@RequestBody(required = true) UserDTO userDTO, @RequestHeader(value = OtpConstants.IP_ADDRESS, required = true) String ipAddress) {
+		LOGGER.debug("Init validateActivationCode with request {} ", userDTO);
+		ResponseDto<OtpDTO> response = new ResponseDto<>();
+		try {
+			response = this.otpBusiness.validateActivationCode(userDTO, ipAddress);
+		} catch (OtpException otpException) {
+			response = new ResponseDto<>(otpException.getStatus(), otpException.getCode(), otpException.getMessage(), otpException.getFieldErrors());
+			LOGGER.error("Error validateActivationCode ", otpException);
+		} catch (Exception exception) {
+			response = new ResponseDto<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), OtpConstants.DOA000, messageUtil.getMessage(OtpConstants.DOA000));
+			LOGGER.error("Error validateActivationCode ", exception);
+		} finally {
+			var audit = new AuditDto(LocalDate.now().toString(), UUID.randomUUID().toString(), ipAddress, userDTO.getTipoIdentificacion() + userDTO.getNumeroIdentificacion(), LocalDateTime.now().toString(), OtpConstants.CHANNEL, OtpConstants.FUNCTIONALITY, AuditOperation.VALIDATE_OTP.getValue(),
+					userDTO, response.getStatus(), response.getResponseCode(), response.getResponseMessage(), response.getData());
+			this.producerSQS.sendAuditMessage(audit);
+		}
+		LOGGER.debug("Finish validateActivationCode with response {} ", response);
+		return response;
+
+	}
+
+}

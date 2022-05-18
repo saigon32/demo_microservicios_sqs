@@ -1,0 +1,26 @@
+package com.dislicores.api.otp.messaging;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+import org.springframework.stereotype.Component;
+
+import com.dislicores.api.otp.domain.AuditDto;
+import com.dislicores.api.otp.util.OtpProperties;
+
+@Component
+public class ProducerSQS {
+
+	private final QueueMessagingTemplate sqsTemplate;
+	private final OtpProperties properties;
+
+	@Autowired
+	public ProducerSQS(QueueMessagingTemplate sqsTemplate, OtpProperties properties) {
+		this.sqsTemplate = sqsTemplate;
+		this.properties = properties;
+	}
+
+	public void sendAuditMessage(AuditDto audit) {
+		this.sqsTemplate.convertAndSend(this.properties.getAuditQueueName(), audit);
+	}
+
+}

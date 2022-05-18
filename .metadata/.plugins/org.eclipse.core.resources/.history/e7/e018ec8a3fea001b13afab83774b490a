@@ -1,0 +1,5 @@
+FROM adoptopenjdk/openjdk12-openj9
+VOLUME /tmp
+ADD ./build/libs/*.jar app.jar
+EXPOSE 8184
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-Duser.timezone=America/Bogota","-jar","/app.jar"]

@@ -1,0 +1,25 @@
+package com.familia.api.otp.domain;
+
+import java.io.Serializable;
+
+public class ActivationAccountDTO implements Serializable {
+
+	private static final long serialVersionUID = 179660172727464330L;
+	/** emial del usuari */
+	private String email;
+
+	/**
+	 * @return the email
+	 */
+	public String getEmail() {
+		return email;
+	}
+
+	/**
+	 * @param email the email to set
+	 */
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+}

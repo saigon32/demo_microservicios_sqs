@@ -1,0 +1,34 @@
+package com.dislicores.api.otp.util;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+import lombok.Data;
+
+/**
+ * Componente de Spring que permite la carga de propiedades personalizadas
+ * definidas en el archivo de configuracion del proyecto
+ *
+ * @author ricardo.ayala@pragma.com.co
+ *
+ */
+@Data
+@Component
+@ConfigurationProperties(prefix = "otp")
+public class OtpProperties {
+
+	private Notification notification;
+
+	private String auditQueueName;
+	private int confOtpValidityInHours;
+	private int attempts;
+
+	@Data
+	public static class Notification {
+		/** Endpoint de consumo de las Apis rest de notificacion */
+		private String endpointUrl;
+		private String otpEmailTemplate;
+	    private String smsMessageTemplate;
+	}
+
+}

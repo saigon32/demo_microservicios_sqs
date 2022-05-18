@@ -1,0 +1,158 @@
+package com.dislicores.api.otp.business;
+
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import com.dislicores.api.otp.domain.OtpDTO;
+import com.dislicores.api.otp.domain.ResponseDto;
+import com.dislicores.api.otp.domain.UserDTO;
+import com.dislicores.api.otp.exception.OtpException;
+import com.dislicores.api.otp.model.Otp;
+import com.dislicores.api.otp.model.Usuario;
+import com.dislicores.api.otp.provider.NotificationProvider;
+import com.dislicores.api.otp.repository.OtpRepository;
+import com.dislicores.api.otp.repository.UsuarioRepository;
+import com.dislicores.api.otp.util.MessagesUtil;
+import com.dislicores.api.otp.util.OtpConstants;
+import com.dislicores.api.otp.util.OtpProperties;
+import com.dislicores.api.otp.util.ValidationUtils;
+
+/**
+ * Clase que permite generar y validar el segundo factor de autenticacion one time password (OTP), para los modulos donde se requiere
+ * generar la contraseña o cuando se requiere recuperar contraseña. Permite enviar notificacion via mensaje de texto e email del usuario
+ * para que este pueda ser usado posteriormente
+ * 
+ * @author andres.jurado
+ *
+ */
+@Service
+public class OtpBusinessImpl implements OtpBusiness {
+
+    private final OtpRepository otpRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final MessagesUtil message;
+    private final OtpProperties properties;
+    private final ValidationUtils validation;
+    private final NotificationProvider notification;
+
+    /**
+     * Constructor de clase, se inicializan los modulos que se requieren usar
+     * 
+     * @param otpRepository
+     * @param usuarioRepository
+     * @param messageUtil
+     * @param otpProperties
+     * @param validationUtils
+     */
+    @Autowired
+    public OtpBusinessImpl(OtpRepository otpRepository, UsuarioRepository usuarioRepository, MessagesUtil message, OtpProperties properties,
+            ValidationUtils validation, NotificationProvider notification) {
+        this.otpRepository = otpRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.message = message;
+        this.properties = properties;
+        this.validation = validation;
+        this.notification = notification;
+
+    }
+
+    /**
+     * Permite crear un OTP para un usuario, enviando como parametros (userDTO): su tipo de identificacion e identificacion y permitiendo
+     * persistir el mismo en la tabla OTP y enviandolo como notificaion via mensaje de texto o correo electronico, con un tiempo de
+     * caducidad para que el mismo pueda ser validado para su uso
+     */
+    public void createOtpCode(UserDTO userDTO, String ip) throws OtpException {
+        this.validation.validate(userDTO);
+        var user = this.usuarioRepository
+                .findByTipoIdentificacionAndNumeroIdentificacion(userDTO.getTipoIdentificacion(), userDTO.getNumeroIdentificacion())
+                .orElseThrow(() -> new OtpException(HttpStatus.BAD_REQUEST.value(), OtpConstants.DOA006,
+                        this.message.getMessage(OtpConstants.DOA006)));
+        int validityHours = properties.getConfOtpValidityInHours();
+        var otp = new Otp();
+        otp.setUsuario(user);
+        otp.setUsado(false);
+        otp.setClave(RandomStringUtils.random(5, false, true));
+        otp.setFechaCreacion(Timestamp.valueOf(LocalDateTime.now()));
+        otp.setFechaVencimiento(Timestamp.valueOf(LocalDateTime.now().plusHours(validityHours)));
+        otp.setIntentos(0);
+        this.otpRepository.save(otp);
+        notification.sendSMS(user.getCelular(), otp.getClave(), ip);
+        if (Objects.nonNull(user.getEmail())) {
+            notification.sendEmail(user.getEmail(), otp.getClave(), ip);
+        }
+    }
+
+    /**
+     * Permite validar el OTP para un usuario enviando como parametros (userDTO): su tipo de identificacion, identificacion y OTP, esto con
+     * el fin de validarlo y poderlo activar
+     * 
+     */
+    public ResponseDto<OtpDTO> validateActivationCode(UserDTO userDTO, String ip) throws OtpException {
+        this.validation.validate(userDTO);
+        var user = this.usuarioRepository
+                .findByTipoIdentificacionAndNumeroIdentificacion(userDTO.getTipoIdentificacion(), userDTO.getNumeroIdentificacion())
+                .orElseThrow(() -> new OtpException(HttpStatus.BAD_REQUEST.value(), OtpConstants.DOA006,
+                        this.message.getMessage(OtpConstants.DOA006)));
+        return getResponseByUserAndKey(user, userDTO.getKey());
+    }
+
+    /**
+     * Valida de acuerdo a los parametros que se ingresan en el metodo validateActivationCode, que los datos correspondan con los que
+     * previamente se crearon en la tabla OTP, permitiendo: validar los datos del usuario, contar los intentos para el OTP y que este sea
+     * correcto y adicionalmente que el mismo no haya sido expirado en el rango de tiempo que fue creado
+     * 
+     * @param user
+     * @param key
+     * @return
+     * @throws OtpException
+     */
+    private ResponseDto<OtpDTO> getResponseByUserAndKey(Usuario user, String key) throws OtpException {
+        ResponseDto<OtpDTO> response = null;
+        var optionalOtp = otpRepository.findFirstByUsuarioOrderByFechaCreacionDesc(user);
+        var otpDTO = new OtpDTO(false);
+        if (optionalOtp.isEmpty()) {
+            response = new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), OtpConstants.DOA006, message.getMessage(OtpConstants.DOA006),
+                    otpDTO);
+            return response;
+        }
+        var otp = optionalOtp.get();
+        if (otp.getUsado() || otp.getFechaVencimiento().before(Timestamp.valueOf(LocalDateTime.now()))) {
+            response = new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), OtpConstants.DOA008, message.getMessage(OtpConstants.DOA008),
+                    otpDTO);
+            otpDTO.setAttempts(otp.getIntentos());
+            otpDTO.setValid(false);
+            return response;
+        }
+        if (otp.getIntentos() >= properties.getAttempts()) {
+            response = new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), OtpConstants.DOA009, message.getMessage(OtpConstants.DOA009),
+                    otpDTO);
+            otpDTO.setAttempts(otp.getIntentos());
+            otpDTO.setValid(false);
+            return response;
+        }
+        if (!otp.getClave().equalsIgnoreCase(key)) {
+            otp.setIntentos(otp.getIntentos() + 1);
+            otpDTO.setAttempts(otp.getIntentos());
+            otpDTO.setValid(false);
+            otpRepository.saveAndFlush(otp);
+            response = new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), OtpConstants.DOA010, message.getMessage(OtpConstants.DOA010),
+                    otpDTO);
+            return response;
+        } else {
+            otp.setIntentos(otp.getIntentos() + 1);
+            otp.setUsado(true);
+            otpDTO.setAttempts(otp.getIntentos());
+            otpDTO.setValid(true);
+            otpRepository.saveAndFlush(otp);
+            response = new ResponseDto<>(HttpStatus.OK.value(), OtpConstants.DOA011, message.getMessage(OtpConstants.DOA011), otpDTO);
+            return response;
+        }
+    }
+
+}

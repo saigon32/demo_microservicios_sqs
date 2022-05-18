@@ -1,0 +1,23 @@
+package com.dislicores.api.otp.util;
+
+/**
+ * Enumeracion que agrupa las operaciones y su valor para ser registrados en el
+ * proceso de auditoria
+ * 
+ * @author ricardo.ayala@pragma.com.co
+ * @version 1.0
+ */
+public enum AuditOperation {
+
+	CREATE_OTP("Creacion de codigo OTP"), VALIDATE_OTP("Validacion de codigo OTP");
+
+	AuditOperation(String value) {
+		this.value = value;
+	}
+
+	private String value;
+
+	public String getValue() {
+		return value;
+	}
+}
